@@ -106,7 +106,6 @@
 
   .task-item { border-bottom: 1px solid var(--line); }
   .task-row { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; margin-left: 3.25rem; position: relative; }
-  .task-row:hover .task-action-btn.del { opacity: 1; }
 
   .task-cb { width: 17px; height: 17px; border: 1.5px solid var(--ink-faint); background: transparent; cursor: pointer; flex-shrink: 0; margin-top: 3px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
   .task-cb:hover { border-color: var(--ink); }
@@ -131,7 +130,7 @@
 
   .task-action-btn { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--ink-light); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 4px 10px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
   .task-action-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .task-action-btn.del { opacity: 0; }
+  .task-action-btn.del { background: transparent; border-color: var(--ink-faint); color: var(--ink-light); }
   .task-action-btn.del:hover { background: var(--red); border-color: var(--red); color: var(--paper); }
   .task-action-btn.has-subtasks { background: transparent; color: #b8860b; border-color: #b8860b; font-weight: 500; }
   [data-theme="dark"] .task-action-btn.has-subtasks { color: #f0c040; border-color: #f0c040; font-weight: 500; }
@@ -150,8 +149,7 @@
   .subtask-title[contenteditable="true"] { outline: none; border-bottom: 1px dashed var(--ink-faint); }
 
   .subtask-actions { display: flex; gap: 0.4rem; align-items: center; flex-shrink: 0; }
-  .subtask-del { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-light); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; cursor: pointer; opacity: 0; transition: all 0.15s; }
-  .subtask-row:hover .subtask-del { opacity: 1; }
+  .subtask-del { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-light); background: transparent; border: 1px solid var(--ink-faint); border-radius: 4px; padding: 3px 8px; cursor: pointer; transition: all 0.15s; }
   .subtask-del:hover { background: var(--red); border-color: var(--red); color: var(--paper); }
 
   .add-subtask-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0; transition: background 0.15s; border-radius: 6px; }
@@ -174,7 +172,7 @@
   .today-complete-cb.checked::after { content: ''; width: 4px; height: 8px; border: 1.5px solid var(--paper); border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); display: block; }
   .today-title { font-family: 'DM Sans', sans-serif; font-size: 1.1rem; color: var(--blue); flex: 1; font-weight: 500; }
   .today-title.done { text-decoration: line-through; color: var(--ink-faint); font-weight: 400; }
-  .today-context { font-family: 'DM Sans', sans-serif; font-size: 0.78rem; color: var(--ink-faint); margin-top: 2px; }
+  .today-context { font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: var(--ink-light); text-align: right; margin-bottom: 4px; }
 
   #history-view { display: none; }
   .history-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
@@ -653,7 +651,6 @@ function renderToday() {
           <div class="today-complete-cb${t.completed ? ' checked' : ''}" onclick="toggleTask('${t.id}');setTimeout(renderToday,150)"></div>
           <div style="flex:1">
             <div class="today-title${t.completed ? ' done' : ''}">${escHtml(t.title)}</div>
-            <div class="today-context">Task</div>
           </div>
           <div class="today-cb checked" title="Remove from Do Today" onclick="removeFromToday('task','${t.id}')"></div>
         </div>`;
@@ -664,8 +661,8 @@ function renderToday() {
         <div class="today-item is-subtask">
           <div class="today-complete-cb${sub.completed ? ' checked' : ''}" onclick="toggleSubtaskComplete('${sub.id}')"></div>
           <div style="flex:1">
-            <div class="today-title${sub.completed ? ' done' : ''}">${escHtml(sub.title)}</div>
             <div class="today-context">Subtask of: ${parent ? escHtml(parent.title) : 'Unknown task'}</div>
+            <div class="today-title${sub.completed ? ' done' : ''}">${escHtml(sub.title)}</div>
           </div>
           <div class="today-cb checked" title="Remove from Do Today" onclick="removeFromToday('subtask','${sub.id}')"></div>
         </div>`;
