@@ -17,19 +17,23 @@
     --red: #c0392b;
     --shadow: 0 1px 3px rgba(0,0,0,0.08);
     --margin-line: #e8c8c8;
+    --unsaved: #fff000;
+    --unsaved-border: #ccaa00;
   }
 
   [data-theme="dark"] {
     --paper: #1e1e1c;
     --bg: #141412;
     --ink: #f0ede8;
-    --ink-light: #9e9b96;
-    --ink-faint: #4a4845;
+    --ink-light: #b8b4ae;
+    --ink-faint: #6a6762;
     --line: #2e2e2b;
     --check: #f0ede8;
     --red: #e05c4a;
     --shadow: 0 1px 3px rgba(0,0,0,0.3);
     --margin-line: #3a2e2e;
+    --unsaved: #665500;
+    --unsaved-border: #ccaa00;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -43,7 +47,6 @@
     transition: background 0.2s, color 0.2s;
   }
 
-  /* LOGIN */
   #login-screen {
     min-height: 100vh;
     display: flex;
@@ -55,24 +58,20 @@
     background: var(--paper);
     border: 1px solid var(--line);
     padding: 2.5rem 2rem;
-    width: 320px;
+    width: 340px;
     box-shadow: var(--shadow);
   }
 
   .login-card h1 {
     font-family: 'Syne', sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 600;
     margin-bottom: 0.25rem;
     letter-spacing: -0.02em;
     color: var(--ink);
   }
 
-  .login-card p {
-    font-size: 0.82rem;
-    color: var(--ink-light);
-    margin-bottom: 1.5rem;
-  }
+  .login-card p { font-size: 1rem; color: var(--ink-light); margin-bottom: 1.5rem; }
 
   .login-card input {
     width: 100%;
@@ -80,7 +79,7 @@
     border-bottom: 1.5px solid var(--ink-faint);
     background: transparent;
     font-family: 'DM Sans', sans-serif;
-    font-size: 1rem;
+    font-size: 1.2rem;
     padding: 0.5rem 0;
     color: var(--ink);
     outline: none;
@@ -95,21 +94,19 @@
     background: var(--ink);
     color: var(--paper);
     border: none;
-    padding: 0.65rem;
+    padding: 0.75rem;
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.85rem;
+    font-size: 1rem;
     letter-spacing: 0.04em;
     cursor: pointer;
     transition: opacity 0.15s;
   }
 
   .login-card button:hover { opacity: 0.82; }
-  .login-error { color: var(--red); font-size: 0.75rem; margin-top: 0.75rem; text-align: center; }
+  .login-error { color: var(--red); font-size: 0.9rem; margin-top: 0.75rem; text-align: center; }
 
-  /* APP SHELL */
-  #app { display: none; max-width: 740px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+  #app { display: none; max-width: 780px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
 
-  /* TOP BAR */
   .topbar {
     display: flex;
     align-items: center;
@@ -121,18 +118,18 @@
 
   .topbar h1 {
     font-family: 'Syne', sans-serif;
-    font-size: 1.15rem;
+    font-size: 1.35rem;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--ink);
   }
 
-  .topbar-right { display: flex; gap: 1rem; align-items: center; }
+  .topbar-right { display: flex; gap: 1.25rem; align-items: center; }
 
   .top-btn {
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.75rem;
+    font-size: 0.92rem;
     color: var(--ink-light);
     background: none;
     border: none;
@@ -150,16 +147,14 @@
     border: 1px solid var(--line);
     color: var(--ink-light);
     cursor: pointer;
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.6rem;
     font-family: 'DM Sans', sans-serif;
-    letter-spacing: 0.03em;
     transition: all 0.15s;
   }
 
   .theme-toggle:hover { color: var(--ink); border-color: var(--ink-faint); }
 
-  /* BOARD TABS */
   .board-tabs {
     display: flex;
     gap: 0;
@@ -168,15 +163,16 @@
     overflow-x: auto;
     -ms-overflow-style: none;
     scrollbar-width: none;
+    user-select: none;
   }
 
   .board-tabs::-webkit-scrollbar { display: none; }
 
   .board-tab {
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.8rem;
-    letter-spacing: 0.04em;
-    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+    letter-spacing: 0.03em;
+    padding: 0.5rem 1.1rem;
     background: none;
     border: none;
     border-bottom: 2px solid transparent;
@@ -192,16 +188,17 @@
 
   .board-tab:hover { color: var(--ink); }
   .board-tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+  .board-tab.dragging { opacity: 0.4; }
+  .board-tab.drag-over { border-bottom-color: var(--red); }
 
   .board-tab-del {
-    font-size: 0.6rem;
+    font-size: 0.75rem;
     opacity: 0;
     color: var(--ink-faint);
     background: none;
     border: none;
     cursor: pointer;
     padding: 0 2px;
-    line-height: 1;
     transition: all 0.15s;
   }
 
@@ -210,7 +207,7 @@
 
   .board-tab-add {
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.78rem;
+    font-size: 0.92rem;
     padding: 0.5rem 0.75rem;
     background: none;
     border: none;
@@ -222,7 +219,6 @@
 
   .board-tab-add:hover { color: var(--ink-light); }
 
-  /* PAPER SHEET */
   .paper {
     background: var(--paper);
     border: 1px solid var(--line);
@@ -234,7 +230,7 @@
   .paper::before {
     content: '';
     position: absolute;
-    left: 3rem;
+    left: 3.25rem;
     top: 0;
     bottom: 0;
     width: 1px;
@@ -242,14 +238,22 @@
     opacity: 0.5;
   }
 
-  /* ADD TASK */
   .add-task-row {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.6rem 0;
+    padding: 0.65rem 0.5rem 0.65rem 0;
     border-bottom: 1px solid var(--line);
-    margin-left: 3rem;
+    margin-left: 3.25rem;
+    transition: background 0.15s, border-color 0.15s;
+    border-radius: 6px;
+  }
+
+  .add-task-row.unsaved {
+    background: var(--unsaved);
+    border-bottom-color: var(--unsaved-border);
+    padding-left: 0.5rem;
+    margin-left: 2.75rem;
   }
 
   .add-task-input {
@@ -257,7 +261,7 @@
     border: none;
     background: transparent;
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.95rem;
+    font-size: 1.19rem;
     color: var(--ink);
     outline: none;
     padding: 0;
@@ -267,26 +271,25 @@
 
   .add-task-btn {
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.05em;
+    font-size: 0.875rem;
+    letter-spacing: 0.04em;
     color: var(--ink-light);
     background: none;
     border: 1px solid var(--line);
-    padding: 0.25rem 0.6rem;
+    padding: 0.3rem 0.7rem;
     cursor: pointer;
     transition: all 0.15s;
   }
 
   .add-task-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
-  /* TASK ROWS */
   .task-section-label {
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.65rem;
+    font-size: 0.8rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--ink-faint);
-    margin: 1.25rem 0 0.5rem 3rem;
+    margin: 1.25rem 0 0.5rem 3.25rem;
   }
 
   .task-item { border-bottom: 1px solid var(--line); }
@@ -295,17 +298,16 @@
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    padding: 0.55rem 0;
-    margin-left: 3rem;
+    padding: 0.6rem 0;
+    margin-left: 3.25rem;
     position: relative;
   }
 
   .task-row:hover .task-actions { opacity: 1; }
 
-  /* CHECKBOX */
   .task-cb {
-    width: 15px;
-    height: 15px;
+    width: 17px;
+    height: 17px;
     border: 1.5px solid var(--ink-faint);
     background: transparent;
     cursor: pointer;
@@ -318,20 +320,15 @@
   }
 
   .task-cb:hover { border-color: var(--ink); }
-
-  .task-cb.checked {
-    background: var(--check);
-    border-color: var(--check);
-  }
-
+  .task-cb.checked { background: var(--check); border-color: var(--check); }
   .task-cb.checked::after {
     content: '';
     width: 4px;
-    height: 7px;
+    height: 8px;
     border: 1.5px solid var(--paper);
     border-top: none;
     border-left: none;
-    transform: rotate(45deg) translate(-1px, -1px);
+    transform: rotate(45deg) translate(-1px,-1px);
     display: block;
   }
 
@@ -339,29 +336,40 @@
 
   .task-title {
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.95rem;
+    font-size: 1.19rem;
     line-height: 1.4;
     color: var(--ink);
     cursor: text;
     word-break: break-word;
   }
 
-  .task-title.done {
-    text-decoration: line-through;
-    color: var(--ink-faint);
-  }
-
+  .task-title.done { text-decoration: line-through; color: var(--ink-faint); }
   .task-title[contenteditable="true"] { outline: none; border-bottom: 1px dashed var(--ink-faint); }
 
   .task-meta {
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.65rem;
+    font-size: 0.8rem;
     color: var(--ink-faint);
     margin-top: 2px;
     display: none;
   }
 
   .task-item:hover .task-meta { display: block; }
+
+  .subtask-indicator {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    color: var(--ink-faint);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 2px 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .subtask-indicator.all-done { color: var(--ink-light); border-color: var(--ink-faint); }
 
   .task-actions {
     display: flex;
@@ -374,44 +382,41 @@
 
   .task-action-btn {
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.65rem;
-    color: var(--ink-faint);
-    background: none;
-    border: none;
+    font-size: 0.85rem;
+    color: var(--ink-light);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 4px 10px;
     cursor: pointer;
-    padding: 2px 4px;
-    transition: color 0.15s;
+    transition: all 0.15s;
+    white-space: nowrap;
   }
 
-  .task-action-btn:hover { color: var(--ink); }
-  .task-action-btn.del:hover { color: var(--red); }
+  .task-action-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .task-action-btn.del:hover { background: var(--red); border-color: var(--red); color: var(--paper); }
 
-  /* SUBTASKS */
-  .subtasks {
-    margin-left: 3.5rem;
-    display: none;
-  }
-
+  .subtasks { margin-left: 3.5rem; display: none; }
   .subtasks.open { display: block; }
 
   .subtask-row {
     display: flex;
     align-items: flex-start;
     gap: 0.6rem;
-    padding: 0.35rem 0;
+    padding: 0.38rem 0;
     border-bottom: 1px solid var(--line);
   }
 
   .subtask-row:last-child { border-bottom: none; }
 
   .subtask-cb {
-    width: 12px;
-    height: 12px;
+    width: 13px;
+    height: 13px;
     border: 1px solid var(--ink-faint);
     background: transparent;
     cursor: pointer;
     flex-shrink: 0;
-    margin-top: 3px;
+    margin-top: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -420,26 +425,21 @@
   }
 
   .subtask-cb:hover { border-color: var(--ink); }
-
-  .subtask-cb.checked {
-    background: var(--check);
-    border-color: var(--check);
-  }
-
+  .subtask-cb.checked { background: var(--check); border-color: var(--check); }
   .subtask-cb.checked::after {
     content: '';
     width: 3px;
-    height: 5px;
+    height: 6px;
     border: 1px solid var(--paper);
     border-top: none;
     border-left: none;
-    transform: rotate(45deg) translate(-1px, -1px);
+    transform: rotate(45deg) translate(-1px,-1px);
     display: block;
   }
 
   .subtask-title {
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.85rem;
+    font-size: 1.06rem;
     color: var(--ink);
     flex: 1;
     cursor: text;
@@ -450,25 +450,31 @@
   .subtask-title[contenteditable="true"] { outline: none; border-bottom: 1px dashed var(--ink-faint); }
 
   .subtask-del {
-    font-size: 0.65rem;
-    color: var(--ink-faint);
-    background: none;
-    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    color: var(--ink-light);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 3px 8px;
     cursor: pointer;
     opacity: 0;
-    padding: 2px;
     transition: all 0.15s;
   }
 
   .subtask-row:hover .subtask-del { opacity: 1; }
-  .subtask-del:hover { color: var(--red); }
+  .subtask-del:hover { background: var(--red); border-color: var(--red); color: var(--paper); }
 
   .add-subtask-row {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    padding: 0.3rem 0;
+    padding: 0.35rem 0;
+    transition: background 0.15s;
+    border-radius: 6px;
   }
+
+  .add-subtask-row.unsaved { background: var(--unsaved); padding-left: 0.4rem; }
 
   .add-subtask-input {
     flex: 1;
@@ -476,7 +482,7 @@
     border-bottom: 1px dashed var(--ink-faint);
     background: transparent;
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.85rem;
+    font-size: 1.06rem;
     color: var(--ink);
     outline: none;
     padding: 0.15rem 0;
@@ -484,16 +490,14 @@
 
   .add-subtask-input::placeholder { color: var(--ink-faint); font-style: italic; }
 
-  /* EMPTY STATE */
   .empty {
     font-family: 'DM Sans', sans-serif;
     font-style: italic;
-    font-size: 0.9rem;
+    font-size: 1.1rem;
     color: var(--ink-faint);
-    padding: 1.5rem 0 0.5rem 3rem;
+    padding: 1.5rem 0 0.5rem 3.25rem;
   }
 
-  /* HISTORY VIEW */
   #history-view { display: none; }
 
   .history-header {
@@ -505,22 +509,12 @@
     gap: 0.75rem;
   }
 
-  .history-count {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.8rem;
-    color: var(--ink-light);
-    letter-spacing: 0.03em;
-  }
-
-  .history-filter {
-    display: flex;
-    gap: 1rem;
-  }
+  .history-count { font-family: 'Syne', sans-serif; font-size: 0.95rem; color: var(--ink-light); }
+  .history-filter { display: flex; gap: 1rem; }
 
   .hist-btn {
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.75rem;
-    letter-spacing: 0.03em;
+    font-size: 0.92rem;
     color: var(--ink-light);
     background: none;
     border: none;
@@ -537,11 +531,11 @@
 
   .history-board-label {
     font-family: 'Syne', sans-serif;
-    font-size: 0.7rem;
+    font-size: 0.85rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--ink-faint);
-    padding: 0.5rem 0 0.4rem 3rem;
+    padding: 0.5rem 0 0.4rem 3.25rem;
     border-bottom: 1px solid var(--line);
   }
 
@@ -549,14 +543,14 @@
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    padding: 0.55rem 0;
+    padding: 0.6rem 0;
     border-bottom: 1px solid var(--line);
-    margin-left: 3rem;
+    margin-left: 3.25rem;
   }
 
   .history-check {
-    width: 15px;
-    height: 15px;
+    width: 17px;
+    height: 17px;
     background: var(--ink-faint);
     flex-shrink: 0;
     margin-top: 3px;
@@ -568,172 +562,134 @@
   }
 
   .history-check:hover { background: var(--ink); }
-
   .history-check::after {
     content: '';
     width: 4px;
-    height: 7px;
+    height: 8px;
     border: 1.5px solid var(--paper);
     border-top: none;
     border-left: none;
-    transform: rotate(45deg) translate(-1px, -1px);
+    transform: rotate(45deg) translate(-1px,-1px);
     display: block;
   }
 
-  .history-title {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.9rem;
-    color: var(--ink-light);
-    text-decoration: line-through;
-    flex: 1;
-  }
-
-  .history-date {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.65rem;
-    color: var(--ink-faint);
-    flex-shrink: 0;
-    margin-top: 3px;
-  }
+  .history-title { font-family: 'DM Sans', sans-serif; font-size: 1.1rem; color: var(--ink-light); text-decoration: line-through; flex: 1; }
+  .history-date { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-faint); flex-shrink: 0; margin-top: 4px; }
 
   .history-del-btn {
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.65rem;
-    color: var(--ink-faint);
-    background: none;
-    border: none;
+    font-size: 0.8rem;
+    color: var(--ink-light);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 3px 8px;
     cursor: pointer;
     flex-shrink: 0;
-    margin-top: 3px;
+    margin-top: 2px;
     opacity: 0;
     transition: all 0.15s;
-    padding: 0 2px;
   }
 
   .history-item:hover .history-del-btn { opacity: 1; }
-  .history-del-btn:hover { color: var(--red); }
+  .history-del-btn:hover { background: var(--red); border-color: var(--red); color: var(--paper); }
 
-  /* history subtasks */
-  .history-subtasks {
-    margin-left: 1.5rem;
-    margin-top: 0.2rem;
-  }
+  .history-subtasks { margin-left: 1.5rem; margin-top: 0.2rem; }
 
-  .history-subtask-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.2rem 0;
-  }
+  .history-subtask-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.22rem 0; }
 
   .history-subtask-cb {
-    width: 12px;
-    height: 12px;
+    width: 13px; height: 13px;
     border: 1px solid var(--ink-faint);
     background: transparent;
     cursor: pointer;
     flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     border-radius: 50%;
     transition: all 0.15s;
   }
 
   .history-subtask-cb:hover { border-color: var(--ink); }
-
-  .history-subtask-cb.checked {
-    background: var(--check);
-    border-color: var(--check);
-  }
-
+  .history-subtask-cb.checked { background: var(--check); border-color: var(--check); }
   .history-subtask-cb.checked::after {
     content: '';
-    width: 3px;
-    height: 5px;
+    width: 3px; height: 6px;
     border: 1px solid var(--paper);
-    border-top: none;
-    border-left: none;
-    transform: rotate(45deg) translate(-1px, -1px);
+    border-top: none; border-left: none;
+    transform: rotate(45deg) translate(-1px,-1px);
     display: block;
   }
 
-  .history-subtask-title {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.8rem;
-    color: var(--ink-faint);
-    text-decoration: line-through;
+  .history-subtask-title { font-family: 'DM Sans', sans-serif; font-size: 0.98rem; color: var(--ink-faint); text-decoration: line-through; }
+
+  #trash-view { display: none; }
+
+  .trash-board-group { margin-bottom: 1.75rem; }
+
+  .trash-board-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0 0.4rem 3.25rem;
+    border-bottom: 1px solid var(--line);
   }
 
-  /* TRASH VIEW */
-  #trash-view { display: none; }
+  .trash-board-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .trash-restore-board {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    color: var(--ink-light);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 3px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .trash-restore-board:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
   .trash-item {
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    padding: 0.55rem 0;
+    padding: 0.6rem 0;
     border-bottom: 1px solid var(--line);
-    margin-left: 3rem;
+    margin-left: 3.25rem;
   }
 
-  .trash-icon {
-    width: 15px;
-    height: 15px;
-    flex-shrink: 0;
-    margin-top: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--ink-faint);
-    font-size: 0.7rem;
-  }
-
-  .trash-title {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.9rem;
-    color: var(--ink-faint);
-    flex: 1;
-  }
-
-  .trash-board {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.65rem;
-    letter-spacing: 0.05em;
-    color: var(--ink-faint);
-    margin-top: 2px;
-    text-transform: uppercase;
-  }
-
-  .trash-meta {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.65rem;
-    color: var(--ink-faint);
-    margin-top: 2px;
-  }
+  .trash-icon { width: 17px; height: 17px; flex-shrink: 0; margin-top: 3px; color: var(--ink-faint); font-size: 0.85rem; }
+  .trash-title { font-family: 'DM Sans', sans-serif; font-size: 1.1rem; color: var(--ink-faint); flex: 1; }
+  .trash-meta { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-faint); margin-top: 2px; }
 
   .trash-restore {
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.65rem;
+    font-size: 0.82rem;
     color: var(--ink-light);
-    background: none;
-    border: none;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 3px 10px;
     cursor: pointer;
     flex-shrink: 0;
-    margin-top: 3px;
-    transition: color 0.15s;
+    margin-top: 2px;
+    transition: all 0.15s;
   }
 
-  .trash-restore:hover { color: var(--ink); }
+  .trash-restore:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
-  /* MODAL */
   .modal-overlay {
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background: rgba(0,0,0,0.3);
-    display: none;
-    align-items: center;
-    justify-content: center;
+    display: none; align-items: center; justify-content: center;
     z-index: 100;
   }
 
@@ -742,96 +698,59 @@
   .modal {
     background: var(--paper);
     border: 1px solid var(--line);
-    padding: 1.75rem;
-    width: 320px;
+    padding: 1.75rem; width: 340px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   }
 
-  .modal h3 {
-    font-family: 'Syne', sans-serif;
-    font-size: 1rem;
-    font-weight: 500;
-    margin-bottom: 1rem;
-    color: var(--ink);
-  }
+  .modal h3 { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 500; margin-bottom: 1rem; color: var(--ink); }
 
   .modal input {
-    width: 100%;
-    border: none;
+    width: 100%; border: none;
     border-bottom: 1.5px solid var(--ink-faint);
     background: transparent;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.9rem;
-    padding: 0.4rem 0;
-    color: var(--ink);
-    outline: none;
-    margin-bottom: 1.25rem;
-    transition: border-color 0.15s;
+    font-family: 'DM Sans', sans-serif; font-size: 1.1rem;
+    padding: 0.4rem 0; color: var(--ink); outline: none;
+    margin-bottom: 1.25rem; transition: border-color 0.15s;
   }
 
   .modal input:focus { border-color: var(--ink); }
 
+  .confirm-msg { font-family: 'DM Sans', sans-serif; font-size: 1rem; color: var(--ink-light); margin-bottom: 1.25rem; line-height: 1.5; }
+
   .modal-btns { display: flex; gap: 0.75rem; justify-content: flex-end; }
 
   .modal-btns button {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.78rem;
-    padding: 0.45rem 1rem;
+    font-family: 'DM Sans', sans-serif; font-size: 0.92rem;
+    padding: 0.5rem 1.1rem;
     border: 1px solid var(--line);
-    background: transparent;
-    color: var(--ink);
-    cursor: pointer;
-    letter-spacing: 0.02em;
-    transition: all 0.15s;
+    background: transparent; color: var(--ink);
+    cursor: pointer; transition: all 0.15s;
   }
 
-  .modal-btns .ok {
-    background: var(--ink);
-    color: var(--paper);
-    border-color: var(--ink);
-  }
-
+  .modal-btns .ok { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   .modal-btns button:hover { opacity: 0.75; }
 
-  /* CONFIRM MODAL */
-  .confirm-msg {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.88rem;
-    color: var(--ink-light);
-    margin-bottom: 1.25rem;
-    line-height: 1.5;
-  }
-
-  /* TOAST */
   .toast {
-    position: fixed;
-    bottom: 1.5rem;
-    left: 50%;
+    position: fixed; bottom: 1.5rem; left: 50%;
     transform: translateX(-50%) translateY(10px);
-    background: var(--ink);
-    color: var(--paper);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.78rem;
-    padding: 0.5rem 1rem;
-    opacity: 0;
-    transition: all 0.2s;
-    pointer-events: none;
-    white-space: nowrap;
-    z-index: 200;
+    background: var(--ink); color: var(--paper);
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    padding: 0.55rem 1.1rem; opacity: 0;
+    transition: all 0.2s; pointer-events: none;
+    white-space: nowrap; z-index: 200;
   }
 
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   @media (max-width: 500px) {
     .paper::before { display: none; }
-    .task-row, .add-task-row, .task-section-label, .history-item, .history-board-label, .trash-item, .empty { margin-left: 0; }
+    .task-row, .add-task-row, .task-section-label, .history-item, .history-board-label, .trash-item, .trash-board-header, .empty { margin-left: 0; }
     .subtasks { margin-left: 1rem; }
   }
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
     <h1>Tasks</h1>
@@ -842,7 +761,6 @@
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <div class="topbar">
     <h1>Tasks</h1>
@@ -854,13 +772,11 @@
     </div>
   </div>
 
-  <!-- TASKS VIEW -->
   <div id="tasks-view">
     <div class="board-tabs" id="board-tabs"></div>
     <div class="paper" id="paper-content"></div>
   </div>
 
-  <!-- HISTORY VIEW -->
   <div id="history-view">
     <div class="history-header">
       <div class="history-count" id="history-count"></div>
@@ -873,19 +789,15 @@
     <div class="paper" id="history-content"></div>
   </div>
 
-  <!-- TRASH VIEW -->
   <div id="trash-view">
     <div class="paper" id="trash-content"></div>
   </div>
 </div>
 
-<!-- MODAL -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
-    <h3 id="modal-title">New board</h3>
-    <div id="modal-body">
-      <input id="modal-input" placeholder="Board name" maxlength="30" onkeydown="if(event.key==='Enter')modalConfirm()" />
-    </div>
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
     <div class="modal-btns">
       <button onclick="closeModal()">Cancel</button>
       <button class="ok" id="modal-ok" onclick="modalConfirm()">Add</button>
@@ -898,9 +810,9 @@
 <script>
 const SUPABASE_URL = 'https://ntyvgkpvmgmuinzxoczt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eXZna3B2bWdtdWluenhvY3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MjkxNDUsImV4cCI6MjA5ODAwNTE0NX0.nvmabXRJYfweyGpFFqDeWHKmcWq4AmthgWjZNdVdFao';
-const PASSWORD = '36';
+const PASSWORD = 'ww';
 
-const headers = {
+const H = {
   'apikey': SUPABASE_KEY,
   'Authorization': `Bearer ${SUPABASE_KEY}`,
   'Content-Type': 'application/json',
@@ -909,31 +821,25 @@ const headers = {
 
 async function api(method, path, body) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method,
-    headers,
+    method, headers: H,
     body: body ? JSON.stringify(body) : undefined
   });
-  if (method === 'DELETE' || (res.status === 204)) return null;
+  if (method === 'DELETE' || res.status === 204) return null;
   const text = await res.text();
   if (!res.ok) throw new Error(text);
   return text ? JSON.parse(text) : null;
 }
 
 // THEME
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  document.getElementById('theme-btn').textContent = theme === 'dark' ? 'Light' : 'Dark';
-  localStorage.setItem('theme', theme);
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('theme-btn').textContent = t === 'dark' ? 'Light' : 'Dark';
+  localStorage.setItem('theme', t);
 }
-
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'light';
-  applyTheme(current === 'dark' ? 'light' : 'dark');
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
 }
-
-// Load saved theme immediately
-const savedTheme = localStorage.getItem('theme') || 'light';
-applyTheme(savedTheme);
+applyTheme(localStorage.getItem('theme') || 'light');
 
 // AUTH
 function tryLogin() {
@@ -950,16 +856,10 @@ function tryLogin() {
 }
 
 // STATE
-let boards = [];
-let tasks = [];
-let subtasks = [];
-let activeBoard = null;
-let currentView = 'tasks';
-let histFilter = 'week';
-let modalCallback = null;
-let modalIsConfirm = false;
+let boards = [], tasks = [], subtasks = [];
+let activeBoard = null, currentView = 'tasks', histFilter = 'week';
+let modalCallback = null, modalIsConfirm = false;
 
-// INIT
 async function init() {
   await loadAll();
   renderBoardTabs();
@@ -968,9 +868,9 @@ async function init() {
 
 async function loadAll() {
   [boards, tasks, subtasks] = await Promise.all([
-    api('GET', 'boards?order=position'),
+    api('GET', 'boards?is_deleted=eq.false&order=position'),
     api('GET', 'tasks?is_deleted=eq.false&order=position'),
-    api('GET', 'subtasks?order=position')
+    api('GET', 'subtasks?is_deleted=eq.false&order=position')
   ]);
   if (boards.length && !activeBoard) activeBoard = boards[0].id;
 }
@@ -981,107 +881,119 @@ function showView(v) {
   document.getElementById('tasks-view').style.display = v === 'tasks' ? 'block' : 'none';
   document.getElementById('history-view').style.display = v === 'history' ? 'block' : 'none';
   document.getElementById('trash-view').style.display = v === 'trash' ? 'block' : 'none';
-  ['tasks','history','trash'].forEach(x => {
-    document.getElementById(`btn-${x}`).classList.toggle('active', x === v);
-  });
+  ['tasks','history','trash'].forEach(x => document.getElementById(`btn-${x}`).classList.toggle('active', x === v));
   if (v === 'history') renderHistory();
   if (v === 'trash') renderTrash();
+}
+
+// BOARD DRAG
+let dragSrcIndex = null;
+function setupBoardDrag() {
+  document.querySelectorAll('.board-tab[draggable="true"]').forEach((tab, i) => {
+    tab.addEventListener('dragstart', () => { dragSrcIndex = i; tab.classList.add('dragging'); });
+    tab.addEventListener('dragend', () => { tab.classList.remove('dragging'); document.querySelectorAll('.board-tab').forEach(t => t.classList.remove('drag-over')); });
+    tab.addEventListener('dragover', e => { e.preventDefault(); tab.classList.add('drag-over'); });
+    tab.addEventListener('dragleave', () => tab.classList.remove('drag-over'));
+    tab.addEventListener('drop', async e => {
+      e.preventDefault(); tab.classList.remove('drag-over');
+      if (dragSrcIndex === null || dragSrcIndex === i) return;
+      const moved = boards.splice(dragSrcIndex, 1)[0];
+      boards.splice(i, 0, moved);
+      boards.forEach((b, idx) => b.position = idx);
+      renderBoardTabs();
+      for (const b of boards) await api('PATCH', `boards?id=eq.${b.id}`, { position: b.position });
+    });
+  });
 }
 
 // BOARDS
 function renderBoardTabs() {
   const el = document.getElementById('board-tabs');
   el.innerHTML = '';
-  boards.forEach(b => {
+  boards.forEach((b, i) => {
     const btn = document.createElement('button');
     btn.className = 'board-tab' + (b.id === activeBoard ? ' active' : '');
-
+    btn.draggable = true;
     const nameSpan = document.createElement('span');
     nameSpan.textContent = b.name;
     btn.appendChild(nameSpan);
-    btn.onclick = (e) => {
-      if (e.target.classList.contains('board-tab-del')) return;
-      activeBoard = b.id;
-      renderBoardTabs();
-      renderPaper();
-    };
-
+    btn.onclick = e => { if (e.target.classList.contains('board-tab-del')) return; activeBoard = b.id; renderBoardTabs(); renderPaper(); };
     const del = document.createElement('button');
     del.className = 'board-tab-del';
     del.textContent = '✕';
-    del.title = 'Delete board';
-    del.onclick = (e) => {
-      e.stopPropagation();
-      confirmDeleteBoard(b.id, b.name);
-    };
+    del.onclick = e => { e.stopPropagation(); confirmDeleteBoard(b.id, b.name); };
     btn.appendChild(del);
-
     el.appendChild(btn);
   });
-
   const add = document.createElement('button');
   add.className = 'board-tab-add';
   add.textContent = '+ board';
   add.onclick = () => openModal('New board', 'Board name', 'Add', async name => {
-    const nb = await api('POST', 'boards', { name, color: '#1a1a18', position: boards.length });
+    const nb = await api('POST', 'boards', { name, color: '#1a1a18', position: boards.length, is_deleted: false });
     boards.push(nb[0]);
     activeBoard = nb[0].id;
     renderBoardTabs();
     renderPaper();
   });
   el.appendChild(add);
+  setupBoardDrag();
 }
 
 function confirmDeleteBoard(id, name) {
-  openConfirm(`Delete "${name}"? All tasks in this board will be moved to the bin.`, 'Delete', async () => {
-    // soft-delete all tasks in board
+  openConfirm(`Delete "${name}"? The board and all its tasks will be moved to the bin and can be restored.`, 'Delete', async () => {
+    const now = new Date().toISOString();
+    // Soft-delete the board
+    await api('PATCH', `boards?id=eq.${id}`, { is_deleted: true, deleted_at: now });
+    // Soft-delete all tasks in the board
     const boardTasks = tasks.filter(t => t.board_id === id);
     for (const t of boardTasks) {
-      t.is_deleted = true;
-      t.deleted_at = new Date().toISOString();
-      await api('PATCH', `tasks?id=eq.${t.id}`, { is_deleted: true, deleted_at: t.deleted_at });
+      await api('PATCH', `tasks?id=eq.${t.id}`, { is_deleted: true, deleted_at: now });
+      t.is_deleted = true; t.deleted_at = now;
     }
-    await api('DELETE', `boards?id=eq.${id}`);
     boards = boards.filter(b => b.id !== id);
     tasks = tasks.filter(t => t.board_id !== id);
-    if (activeBoard === id) activeBoard = boards[0]?.id || null;
+    activeBoard = boards[0]?.id || null;
     renderBoardTabs();
     renderPaper();
-    toast('Board deleted');
+    toast('Board moved to bin');
   });
 }
 
 // PAPER
 function renderPaper() {
   const el = document.getElementById('paper-content');
-  if (!boards.length) {
-    el.innerHTML = '<p class="empty">No boards yet — add one above.</p>';
-    return;
-  }
+  if (!boards.length) { el.innerHTML = '<p class="empty">No boards yet — add one above.</p>'; return; }
   const boardTasks = tasks.filter(t => t.board_id === activeBoard && !t.completed);
-  const html = [];
-
-  html.push(`
-    <div class="add-task-row">
-      <input class="add-task-input" id="new-task-input" placeholder="New task…" onkeydown="if(event.key==='Enter')addTask()" />
+  let html = `
+    <div class="add-task-row" id="add-task-row">
+      <input class="add-task-input" id="new-task-input" placeholder="New task…"
+        oninput="updateAddRowState()" onblur="updateAddRowState()"
+        onkeydown="if(event.key==='Enter')addTask()" />
       <button class="add-task-btn" onclick="addTask()">Add</button>
-    </div>
-  `);
-
+    </div>`;
   if (!boardTasks.length) {
-    html.push('<p class="empty">Nothing here yet.</p>');
+    html += '<p class="empty">Nothing here yet.</p>';
   } else {
-    html.push('<div class="task-section-label">To do</div>');
-    boardTasks.forEach(t => html.push(taskHTML(t)));
+    html += '<div class="task-section-label">To do</div>';
+    boardTasks.forEach(t => { html += taskHTML(t); });
   }
+  el.innerHTML = html;
+}
 
-  el.innerHTML = html.join('');
+function updateAddRowState() {
+  const input = document.getElementById('new-task-input');
+  const row = document.getElementById('add-task-row');
+  if (input && row) row.classList.toggle('unsaved', input.value.trim().length > 0);
 }
 
 function taskHTML(t) {
+  const subs = subtasks.filter(s => s.task_id === t.id);
+  const doneCount = subs.filter(s => s.completed).length;
+  const subIndicator = subs.length
+    ? `<div class="subtask-indicator${doneCount === subs.length ? ' all-done' : ''}">${doneCount}/${subs.length}</div>`
+    : '';
   const created = formatMeta('Created', t.created_at);
   const updated = t.updated_at && t.updated_at !== t.created_at ? formatMeta('Edited', t.updated_at) : '';
-
   return `
     <div class="task-item" id="task-${t.id}">
       <div class="task-row">
@@ -1089,19 +1001,19 @@ function taskHTML(t) {
         <div class="task-text-wrap">
           <div class="task-title${t.completed ? ' done' : ''}"
             contenteditable="true"
-            onblur="updateTaskTitle('${t.id}', this)"
+            onblur="updateTaskTitle('${t.id}',this)"
             onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}"
           >${escHtml(t.title)}</div>
-          <div class="task-meta">${created}${updated ? ' · ' + updated : ''}</div>
+          <div class="task-meta">${created}${updated ? ' · '+updated : ''}</div>
         </div>
+        ${subIndicator}
         <div class="task-actions">
-          <button class="task-action-btn" onclick="toggleSubtasks('${t.id}')">subtasks</button>
-          <button class="task-action-btn del" onclick="deleteTask('${t.id}')">delete</button>
+          <button class="task-action-btn" onclick="toggleSubtasks('${t.id}')">Subtasks</button>
+          <button class="task-action-btn del" onclick="deleteTask('${t.id}')">Delete</button>
         </div>
       </div>
       <div class="subtasks" id="subtasks-${t.id}"></div>
-    </div>
-  `;
+    </div>`;
 }
 
 function renderSubtasks(taskId, readOnly) {
@@ -1110,37 +1022,34 @@ function renderSubtasks(taskId, readOnly) {
   const subs = subtasks.filter(s => s.task_id === taskId);
   let html = subs.map(s => `
     <div class="subtask-row" id="sub-${s.id}">
-      <div class="subtask-cb${s.completed ? ' checked' : ''}" onclick="toggleSubtask('${s.id}', '${taskId}')"></div>
+      <div class="subtask-cb${s.completed ? ' checked' : ''}" onclick="toggleSubtask('${s.id}','${taskId}')"></div>
       <div class="subtask-title${s.completed ? ' done' : ''}"
-        ${readOnly ? '' : `contenteditable="true"
-        onblur="updateSubtaskTitle('${s.id}', this)"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}"`}
+        ${readOnly ? '' : `contenteditable="true" onblur="updateSubtaskTitle('${s.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}"`}
       >${escHtml(s.title)}</div>
-      ${readOnly ? '' : `<button class="subtask-del" onclick="deleteSubtask('${s.id}', '${taskId}')">✕</button>`}
-    </div>
-  `).join('');
-
+      ${readOnly ? '' : `<button class="subtask-del" onclick="deleteSubtask('${s.id}','${taskId}')">Delete</button>`}
+    </div>`).join('');
   if (!readOnly) {
     html += `
-      <div class="add-subtask-row">
+      <div class="add-subtask-row" id="add-sub-row-${taskId}">
         <input class="add-subtask-input" id="sub-input-${taskId}" placeholder="Add subtask…"
+          oninput="updateSubRowState('${taskId}')" onblur="updateSubRowState('${taskId}')"
           onkeydown="if(event.key==='Enter')addSubtask('${taskId}')" />
-      </div>
-    `;
+      </div>`;
   }
   el.innerHTML = html;
+}
+
+function updateSubRowState(taskId) {
+  const input = document.getElementById(`sub-input-${taskId}`);
+  const row = document.getElementById(`add-sub-row-${taskId}`);
+  if (input && row) row.classList.toggle('unsaved', input.value.trim().length > 0);
 }
 
 function toggleSubtasks(taskId) {
   const el = document.getElementById(`subtasks-${taskId}`);
   const isOpen = el.classList.contains('open');
-  if (!isOpen) {
-    renderSubtasks(taskId, false);
-    el.classList.add('open');
-    setTimeout(() => document.getElementById(`sub-input-${taskId}`)?.focus(), 50);
-  } else {
-    el.classList.remove('open');
-  }
+  if (!isOpen) { renderSubtasks(taskId, false); el.classList.add('open'); setTimeout(() => document.getElementById(`sub-input-${taskId}`)?.focus(), 50); }
+  else el.classList.remove('open');
 }
 
 // TASK ACTIONS
@@ -1148,9 +1057,8 @@ async function addTask() {
   const input = document.getElementById('new-task-input');
   const title = input.value.trim();
   if (!title || !activeBoard) return;
-  input.value = '';
-  const pos = tasks.filter(t => t.board_id === activeBoard).length;
-  const res = await api('POST', 'tasks', { board_id: activeBoard, title, position: pos });
+  input.value = ''; updateAddRowState();
+  const res = await api('POST', 'tasks', { board_id: activeBoard, title, position: tasks.filter(t => t.board_id === activeBoard).length });
   tasks.push(res[0]);
   renderPaper();
   setTimeout(() => document.getElementById('new-task-input')?.focus(), 50);
@@ -1160,8 +1068,7 @@ async function toggleTask(id) {
   const t = tasks.find(t => t.id === id);
   if (!t) return;
   const completed = !t.completed;
-  t.completed = completed;
-  t.completed_at = completed ? new Date().toISOString() : null;
+  t.completed = completed; t.completed_at = completed ? new Date().toISOString() : null;
   await api('PATCH', `tasks?id=eq.${id}`, { completed, completed_at: t.completed_at });
   renderPaper();
   if (completed) toast('Task done ✓');
@@ -1171,20 +1078,15 @@ async function updateTaskTitle(id, el) {
   const title = el.textContent.trim();
   if (!title) { el.textContent = tasks.find(t => t.id === id)?.title || ''; return; }
   const t = tasks.find(t => t.id === id);
-  if (t && t.title !== title) {
-    t.title = title;
-    await api('PATCH', `tasks?id=eq.${id}`, { title });
-  }
+  if (t && t.title !== title) { t.title = title; await api('PATCH', `tasks?id=eq.${id}`, { title }); }
 }
 
 async function deleteTask(id) {
-  const t = tasks.find(t => t.id === id);
-  if (!t) return;
-  t.is_deleted = true;
-  t.deleted_at = new Date().toISOString();
-  await api('PATCH', `tasks?id=eq.${id}`, { is_deleted: true, deleted_at: t.deleted_at });
-  tasks = tasks.filter(t => t.id !== id);
-  renderPaper();
+  const now = new Date().toISOString();
+  await api('PATCH', `tasks?id=eq.${id}`, { is_deleted: true, deleted_at: now });
+  tasks = tasks.filter(x => x.id !== id);
+  if (currentView === 'history') renderHistory();
+  else renderPaper();
   toast('Moved to bin');
 }
 
@@ -1193,12 +1095,12 @@ async function addSubtask(taskId) {
   const input = document.getElementById(`sub-input-${taskId}`);
   const title = input.value.trim();
   if (!title) return;
-  input.value = '';
-  const pos = subtasks.filter(s => s.task_id === taskId).length;
-  const res = await api('POST', 'subtasks', { task_id: taskId, title, position: pos });
+  input.value = ''; updateSubRowState(taskId);
+  const res = await api('POST', 'subtasks', { task_id: taskId, title, position: subtasks.filter(s => s.task_id === taskId).length });
   subtasks.push(res[0]);
   renderSubtasks(taskId, false);
   document.getElementById(`subtasks-${taskId}`).classList.add('open');
+  refreshIndicator(taskId);
   setTimeout(() => document.getElementById(`sub-input-${taskId}`)?.focus(), 50);
 }
 
@@ -1206,31 +1108,34 @@ async function toggleSubtask(id, taskId) {
   const s = subtasks.find(s => s.id === id);
   if (!s) return;
   const completed = !s.completed;
-  s.completed = completed;
-  s.completed_at = completed ? new Date().toISOString() : null;
+  s.completed = completed; s.completed_at = completed ? new Date().toISOString() : null;
   await api('PATCH', `subtasks?id=eq.${id}`, { completed, completed_at: s.completed_at });
-  // re-render wherever the subtask appears
-  const inHistory = document.getElementById(`history-subtasks-${taskId}`);
-  if (inHistory) renderHistorySubtasks(taskId);
+  if (document.getElementById(`history-subtasks-${taskId}`)) renderHistorySubtasks(taskId);
   else renderSubtasks(taskId, false);
+  refreshIndicator(taskId);
+}
+
+function refreshIndicator(taskId) {
   const subs = subtasks.filter(s => s.task_id === taskId);
-  if (subs.length && subs.every(s => s.completed)) toast('All subtasks done — mark task complete?');
+  const doneCount = subs.filter(s => s.completed).length;
+  const indEl = document.querySelector(`#task-${taskId} .subtask-indicator`);
+  if (indEl) { indEl.textContent = `${doneCount}/${subs.length}`; indEl.className = `subtask-indicator${doneCount === subs.length ? ' all-done' : ''}`; }
 }
 
 async function updateSubtaskTitle(id, el) {
   const title = el.textContent.trim();
   if (!title) return;
   const s = subtasks.find(s => s.id === id);
-  if (s && s.title !== title) {
-    s.title = title;
-    await api('PATCH', `subtasks?id=eq.${id}`, { title });
-  }
+  if (s && s.title !== title) { s.title = title; await api('PATCH', `subtasks?id=eq.${id}`, { title }); }
 }
 
 async function deleteSubtask(id, taskId) {
-  await api('DELETE', `subtasks?id=eq.${id}`);
+  const now = new Date().toISOString();
+  await api('PATCH', `subtasks?id=eq.${id}`, { is_deleted: true, deleted_at: now });
   subtasks = subtasks.filter(s => s.id !== id);
   renderSubtasks(taskId, false);
+  refreshIndicator(taskId);
+  toast('Subtask moved to bin');
 }
 
 // HISTORY
@@ -1245,49 +1150,26 @@ function filterDoneTasks() {
   const now = new Date();
   return tasks.filter(t => t.completed && t.completed_at).filter(t => {
     const d = new Date(t.completed_at);
-    if (histFilter === 'week') {
-      const ago = new Date(now); ago.setDate(now.getDate() - 7);
-      return d >= ago;
-    }
-    if (histFilter === 'month') {
-      const ago = new Date(now); ago.setMonth(now.getMonth() - 1);
-      return d >= ago;
-    }
+    if (histFilter === 'week') { const ago = new Date(now); ago.setDate(now.getDate()-7); return d >= ago; }
+    if (histFilter === 'month') { const ago = new Date(now); ago.setMonth(now.getMonth()-1); return d >= ago; }
     return true;
-  }).sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at));
+  }).sort((a,b) => new Date(b.completed_at) - new Date(a.completed_at));
 }
 
 function renderHistory() {
   const el = document.getElementById('history-content');
   const filtered = filterDoneTasks();
-
-  // Count tasks + completed subtasks
   let subCount = 0;
-  filtered.forEach(t => {
-    subCount += subtasks.filter(s => s.task_id === t.id && s.completed).length;
-  });
-  const total = filtered.length + subCount;
-  document.getElementById('history-count').textContent =
-    total === 0 ? '' : `${filtered.length} task${filtered.length !== 1 ? 's' : ''} · ${subCount} subtask${subCount !== 1 ? 's' : ''} completed`;
-
-  if (!filtered.length) {
-    el.innerHTML = '<p class="empty">Nothing completed in this period.</p>';
-    return;
-  }
-
-  // Group by board
+  filtered.forEach(t => { subCount += subtasks.filter(s => s.task_id === t.id && s.completed).length; });
+  document.getElementById('history-count').textContent = filtered.length
+    ? `${filtered.length} task${filtered.length!==1?'s':''} · ${subCount} subtask${subCount!==1?'s':''} completed` : '';
+  if (!filtered.length) { el.innerHTML = '<p class="empty">Nothing completed in this period.</p>'; return; }
   const grouped = {};
-  filtered.forEach(t => {
-    const bid = t.board_id;
-    if (!grouped[bid]) grouped[bid] = [];
-    grouped[bid].push(t);
-  });
-
+  filtered.forEach(t => { if (!grouped[t.board_id]) grouped[t.board_id]=[]; grouped[t.board_id].push(t); });
   let html = '';
   Object.entries(grouped).forEach(([bid, bTasks]) => {
     const board = boards.find(b => b.id === bid);
-    html += `<div class="history-board-group">`;
-    html += `<div class="history-board-label">${board ? escHtml(board.name) : 'Unknown'}</div>`;
+    html += `<div class="history-board-group"><div class="history-board-label">${board ? escHtml(board.name) : 'Unknown'}</div>`;
     bTasks.forEach(t => {
       const taskSubs = subtasks.filter(s => s.task_id === t.id);
       html += `
@@ -1298,39 +1180,29 @@ function renderHistory() {
             ${taskSubs.length ? `<div class="history-subtasks" id="history-subtasks-${t.id}"></div>` : ''}
           </div>
           <div class="history-date">${formatDate(t.completed_at)}</div>
-          <button class="history-del-btn" onclick="deleteTask('${t.id}');renderHistory();" title="Move to bin">bin</button>
-        </div>
-      `;
+          <button class="history-del-btn" onclick="deleteTask('${t.id}')">Bin</button>
+        </div>`;
     });
-    html += `</div>`;
+    html += '</div>';
   });
-
   el.innerHTML = html;
-
-  // Render subtasks for each history task
-  filtered.forEach(t => {
-    const taskSubs = subtasks.filter(s => s.task_id === t.id);
-    if (taskSubs.length) renderHistorySubtasks(t.id);
-  });
+  filtered.forEach(t => { if (subtasks.some(s => s.task_id === t.id)) renderHistorySubtasks(t.id); });
 }
 
 function renderHistorySubtasks(taskId) {
   const el = document.getElementById(`history-subtasks-${taskId}`);
   if (!el) return;
-  const subs = subtasks.filter(s => s.task_id === taskId);
-  el.innerHTML = subs.map(s => `
+  el.innerHTML = subtasks.filter(s => s.task_id === taskId).map(s => `
     <div class="history-subtask-row">
-      <div class="history-subtask-cb${s.completed ? ' checked' : ''}" onclick="toggleSubtask('${s.id}', '${taskId}')"></div>
+      <div class="history-subtask-cb${s.completed?' checked':''}" onclick="toggleSubtask('${s.id}','${taskId}')"></div>
       <div class="history-subtask-title">${escHtml(s.title)}</div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 async function uncompleteTask(id) {
   const t = tasks.find(t => t.id === id);
   if (!t) return;
-  t.completed = false;
-  t.completed_at = null;
+  t.completed = false; t.completed_at = null;
   await api('PATCH', `tasks?id=eq.${id}`, { completed: false, completed_at: null });
   renderHistory();
   toast('Moved back to list');
@@ -1338,56 +1210,148 @@ async function uncompleteTask(id) {
 
 // TRASH
 async function renderTrash() {
-  const deleted = await api('GET', 'tasks?is_deleted=eq.true&order=deleted_at.desc');
   const el = document.getElementById('trash-content');
   const now = new Date();
 
-  // Auto-purge >30 days
-  for (const t of deleted) {
-    if (t.deleted_at && (now - new Date(t.deleted_at)) > 30 * 24 * 60 * 60 * 1000) {
-      await api('DELETE', `tasks?id=eq.${t.id}`);
-    }
-  }
+  const [deletedBoards, deletedTasks, deletedSubtasks] = await Promise.all([
+    api('GET', 'boards?is_deleted=eq.true&order=deleted_at.desc'),
+    api('GET', 'tasks?is_deleted=eq.true&order=deleted_at.desc'),
+    api('GET', 'subtasks?is_deleted=eq.true&order=deleted_at.desc')
+  ]);
 
-  const active = deleted.filter(t =>
-    !t.deleted_at || (now - new Date(t.deleted_at)) <= 30 * 24 * 60 * 60 * 1000
-  );
+  const THIRTY = 30*24*60*60*1000;
+  for (const b of deletedBoards) { if (b.deleted_at && (now - new Date(b.deleted_at)) > THIRTY) await api('DELETE', `boards?id=eq.${b.id}`); }
+  for (const t of deletedTasks) { if (t.deleted_at && (now - new Date(t.deleted_at)) > THIRTY) await api('DELETE', `tasks?id=eq.${t.id}`); }
+  for (const s of deletedSubtasks) { if (s.deleted_at && (now - new Date(s.deleted_at)) > THIRTY) await api('DELETE', `subtasks?id=eq.${s.id}`); }
 
-  if (!active.length) {
+  const activeBoards = deletedBoards.filter(b => !b.deleted_at || (now - new Date(b.deleted_at)) <= THIRTY);
+  const activeTasks = deletedTasks.filter(t => !t.deleted_at || (now - new Date(t.deleted_at)) <= THIRTY);
+  const activeSubs = deletedSubtasks.filter(s => !s.deleted_at || (now - new Date(s.deleted_at)) <= THIRTY);
+
+  if (!activeBoards.length && !activeTasks.length && !activeSubs.length) {
     el.innerHTML = '<p class="empty">Bin is empty.</p>';
     return;
   }
 
-  el.innerHTML = active.map(t => {
-    const board = boards.find(b => b.id === t.board_id);
-    const daysLeft = t.deleted_at ? Math.max(0, 30 - Math.floor((now - new Date(t.deleted_at)) / (24*60*60*1000))) : 30;
-    return `
-      <div class="trash-item">
-        <div class="trash-icon">✕</div>
-        <div style="flex:1">
-          <div class="trash-title">${escHtml(t.title)}</div>
-          <div class="trash-board">${board ? escHtml(board.name) : ''}</div>
-          <div class="trash-meta">Deleted ${formatDate(t.deleted_at)} · purges in ${daysLeft}d</div>
+  let html = '';
+  const deletedBoardIds = new Set(activeBoards.map(b => b.id));
+
+  // Deleted boards with their tasks
+  activeBoards.forEach(b => {
+    const boardTasks = activeTasks.filter(t => t.board_id === b.id);
+    const daysLeft = b.deleted_at ? Math.max(0, 30 - Math.floor((now - new Date(b.deleted_at)) / (24*60*60*1000))) : 30;
+    html += `<div class="trash-board-group">
+      <div class="trash-board-header">
+        <div>
+          <div class="trash-board-label">${escHtml(b.name)}</div>
+          <div class="trash-meta">Deleted ${formatDate(b.deleted_at)} · purges in ${daysLeft}d</div>
         </div>
-        <button class="trash-restore" onclick="restoreTask('${t.id}')">Restore</button>
-      </div>
-    `;
-  }).join('');
+        <button class="trash-restore-board" onclick="restoreBoard('${b.id}')">Restore board</button>
+      </div>`;
+    boardTasks.forEach(t => {
+      html += `<div class="trash-item">
+        <div class="trash-icon">—</div>
+        <div style="flex:1"><div class="trash-title">${escHtml(t.title)}</div></div>
+        <button class="trash-restore" onclick="restoreTask('${t.id}','${b.id}')">Restore task</button>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  // Orphan tasks (board still exists) grouped by board
+  const orphanTasks = activeTasks.filter(t => !deletedBoardIds.has(t.board_id));
+  if (orphanTasks.length) {
+    const orphanGroups = {};
+    orphanTasks.forEach(t => { if (!orphanGroups[t.board_id]) orphanGroups[t.board_id]=[]; orphanGroups[t.board_id].push(t); });
+    Object.entries(orphanGroups).forEach(([bid, bTasks]) => {
+      const board = boards.find(b => b.id === bid);
+      html += `<div class="trash-board-group"><div class="trash-board-header"><div class="trash-board-label">${board ? escHtml(board.name) : 'Unknown board'}</div></div>`;
+      bTasks.forEach(t => {
+        const daysLeft = t.deleted_at ? Math.max(0, 30 - Math.floor((now - new Date(t.deleted_at)) / (24*60*60*1000))) : 30;
+        // Find deleted subtasks belonging to this task
+        const taskDeletedSubs = activeSubs.filter(s => s.task_id === t.id);
+        html += `<div class="trash-item">
+          <div class="trash-icon">—</div>
+          <div style="flex:1">
+            <div class="trash-title">${escHtml(t.title)}</div>
+            <div class="trash-meta">Deleted ${formatDate(t.deleted_at)} · purges in ${daysLeft}d</div>
+          </div>
+          <button class="trash-restore" onclick="restoreTask('${t.id}','${bid}')">Restore</button>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+  }
+
+  // Orphan subtasks (task still exists, only subtask was deleted) grouped by board
+  const taskIds = new Set([...activeTasks.map(t => t.id)]);
+  const orphanSubs = activeSubs.filter(s => !taskIds.has(s.task_id));
+  if (orphanSubs.length) {
+    // Group by board via tasks lookup
+    const subGroups = {};
+    orphanSubs.forEach(s => {
+      const parentTask = tasks.find(t => t.id === s.task_id) || subtasks.find(x => x.task_id === s.task_id);
+      const bid = parentTask?.board_id || 'unknown';
+      if (!subGroups[bid]) subGroups[bid] = [];
+      subGroups[bid].push({ sub: s, parentTask });
+    });
+    Object.entries(subGroups).forEach(([bid, items]) => {
+      const board = boards.find(b => b.id === bid);
+      html += `<div class="trash-board-group"><div class="trash-board-header"><div class="trash-board-label">${board ? escHtml(board.name) : 'Unknown'} — subtasks</div></div>`;
+      items.forEach(({ sub, parentTask }) => {
+        const daysLeft = sub.deleted_at ? Math.max(0, 30 - Math.floor((now - new Date(sub.deleted_at)) / (24*60*60*1000))) : 30;
+        const parentTitle = tasks.find(t => t.id === sub.task_id)?.title || 'Unknown task';
+        html += `<div class="trash-item">
+          <div class="trash-icon">—</div>
+          <div style="flex:1">
+            <div class="trash-title">${escHtml(sub.title)}</div>
+            <div class="trash-meta">From: ${escHtml(parentTitle)} · purges in ${daysLeft}d</div>
+          </div>
+          <button class="trash-restore" onclick="restoreSubtask('${sub.id}')">Restore</button>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+  }
+
+  el.innerHTML = html;
 }
 
-async function restoreTask(id) {
-  await api('PATCH', `tasks?id=eq.${id}`, { is_deleted: false, deleted_at: null });
-  const res = await api('GET', `tasks?id=eq.${id}`);
-  if (res && res[0]) tasks.push(res[0]);
+async function restoreBoard(boardId) {
+  await api('PATCH', `boards?id=eq.${boardId}`, { is_deleted: false, deleted_at: null });
+  await api('PATCH', `tasks?board_id=eq.${boardId}&is_deleted=eq.true`, { is_deleted: false, deleted_at: null });
+  await loadAll();
+  renderBoardTabs();
+  renderPaper();
+  renderTrash();
+  toast('Board restored');
+}
+
+async function restoreTask(taskId, boardId) {
+  await api('PATCH', `tasks?id=eq.${taskId}`, { is_deleted: false, deleted_at: null });
+  const res = await api('GET', `tasks?id=eq.${taskId}`);
+  if (res && res[0]) {
+    tasks.push(res[0]);
+    const subs = await api('GET', `subtasks?task_id=eq.${taskId}&is_deleted=eq.false&order=position`);
+    if (subs) { subtasks = subtasks.filter(s => s.task_id !== taskId); subtasks.push(...subs); }
+  }
   renderTrash();
   toast('Task restored');
+}
+
+async function restoreSubtask(subId) {
+  await api('PATCH', `subtasks?id=eq.${subId}`, { is_deleted: false, deleted_at: null });
+  const res = await api('GET', `subtasks?id=eq.${subId}`);
+  if (res && res[0]) subtasks.push(res[0]);
+  renderTrash();
+  toast('Subtask restored');
 }
 
 // MODAL
 function openModal(title, placeholder, okLabel, cb) {
   modalIsConfirm = false;
   document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-body').innerHTML = `<input id="modal-input" placeholder="${placeholder}" maxlength="30" onkeydown="if(event.key==='Enter')modalConfirm()" />`;
+  document.getElementById('modal-body').innerHTML = `<input id="modal-input" placeholder="${placeholder}" maxlength="40" onkeydown="if(event.key==='Enter')modalConfirm()" />`;
   document.getElementById('modal-ok').textContent = okLabel || 'Add';
   modalCallback = cb;
   document.getElementById('modal').classList.add('open');
@@ -1405,51 +1369,35 @@ function openConfirm(message, okLabel, cb) {
 
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
-  modalCallback = null;
-  modalIsConfirm = false;
+  modalCallback = null; modalIsConfirm = false;
 }
 
 async function modalConfirm() {
-  const cb = modalCallback;
-  if (!cb) return;
-  if (modalIsConfirm) {
-    closeModal();
-    await cb();
-  } else {
+  const cb = modalCallback; if (!cb) return;
+  if (modalIsConfirm) { closeModal(); await cb(); }
+  else {
     const val = document.getElementById('modal-input')?.value.trim();
     if (!val) return;
-    closeModal();
-    await cb(val);
+    closeModal(); await cb(val);
   }
 }
 
 document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 
 // UTILS
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function formatDate(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function formatDate(iso) { if (!iso) return ''; return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
 function formatMeta(label, iso) {
   if (!iso) return '';
   const d = new Date(iso);
-  return `${label} ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+  return `${label} ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})} at ${d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
 }
-
 function toast(msg) {
   const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
+  el.textContent = msg; el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2500);
 }
 
-// CHECK AUTH
 if (sessionStorage.getItem('auth') === '1') {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
