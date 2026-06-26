@@ -15,6 +15,8 @@
     --line: #e8e5e0;
     --check: #2a2a28;
     --red: #c0392b;
+    --blue: #2563eb;
+    --blue-bg: #e8f0fe;
     --shadow: 0 1px 3px rgba(0,0,0,0.08);
     --margin-line: #e8c8c8;
     --unsaved: #fff000;
@@ -30,6 +32,8 @@
     --line: #2e2e2b;
     --check: #f0ede8;
     --red: #e05c4a;
+    --blue: #5b9bff;
+    --blue-bg: #16243f;
     --shadow: 0 1px 3px rgba(0,0,0,0.3);
     --margin-line: #3a2e2e;
     --unsaved: #665500;
@@ -47,689 +51,190 @@
     transition: background 0.2s, color 0.2s;
   }
 
-  #login-screen {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
 
-  .login-card {
-    background: var(--paper);
-    border: 1px solid var(--line);
-    padding: 2.5rem 2rem;
-    width: 340px;
-    box-shadow: var(--shadow);
-  }
-
-  .login-card h1 {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.75rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-    letter-spacing: -0.02em;
-    color: var(--ink);
-  }
-
+  .login-card { background: var(--paper); border: 1px solid var(--line); padding: 2.5rem 2rem; width: 340px; box-shadow: var(--shadow); }
+  .login-card h1 { font-family: 'Syne', sans-serif; font-size: 1.75rem; font-weight: 600; margin-bottom: 0.25rem; letter-spacing: -0.02em; color: var(--ink); }
   .login-card p { font-size: 1rem; color: var(--ink-light); margin-bottom: 1.5rem; }
-
-  .login-card input {
-    width: 100%;
-    border: none;
-    border-bottom: 1.5px solid var(--ink-faint);
-    background: transparent;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 1.2rem;
-    padding: 0.5rem 0;
-    color: var(--ink);
-    outline: none;
-    margin-bottom: 1.25rem;
-    transition: border-color 0.15s;
-  }
-
+  .login-card input { width: 100%; border: none; border-bottom: 1.5px solid var(--ink-faint); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 1.2rem; padding: 0.5rem 0; color: var(--ink); outline: none; margin-bottom: 1.25rem; transition: border-color 0.15s; }
   .login-card input:focus { border-color: var(--ink); }
-
-  .login-card button {
-    width: 100%;
-    background: var(--ink);
-    color: var(--paper);
-    border: none;
-    padding: 0.75rem;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 1rem;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    transition: opacity 0.15s;
-  }
-
+  .login-card button { width: 100%; background: var(--ink); color: var(--paper); border: none; padding: 0.75rem; font-family: 'DM Sans', sans-serif; font-size: 1rem; letter-spacing: 0.04em; cursor: pointer; transition: opacity 0.15s; }
   .login-card button:hover { opacity: 0.82; }
   .login-error { color: var(--red); font-size: 0.9rem; margin-top: 0.75rem; text-align: center; }
 
   #app { display: none; max-width: 780px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
 
-  .topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 2rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1.5px solid var(--ink);
-  }
-
-  .topbar h1 {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.35rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink);
-  }
-
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 0.75rem; border-bottom: 1.5px solid var(--ink); }
+  .topbar h1 { font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); }
   .topbar-right { display: flex; gap: 1.25rem; align-items: center; }
 
-  .top-btn {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.92rem;
-    color: var(--ink-light);
-    background: none;
-    border: none;
-    cursor: pointer;
-    letter-spacing: 0.03em;
-    padding: 0;
-    transition: color 0.15s;
-  }
-
+  .top-btn { font-family: 'DM Sans', sans-serif; font-size: 0.92rem; color: var(--ink-light); background: none; border: none; cursor: pointer; letter-spacing: 0.03em; padding: 0; transition: color 0.15s; }
   .top-btn:hover { color: var(--ink); }
   .top-btn.active { color: var(--ink); border-bottom: 1px solid var(--ink); }
+  .top-btn.today-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
 
-  .theme-toggle {
-    background: none;
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    color: var(--ink-light);
-    cursor: pointer;
-    font-size: 0.85rem;
-    padding: 0.25rem 0.6rem;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.15s;
-  }
-
+  .theme-toggle { background: none; border: 1px solid var(--line); border-radius: 4px; color: var(--ink-light); cursor: pointer; font-size: 0.85rem; padding: 0.25rem 0.6rem; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
   .theme-toggle:hover { color: var(--ink); border-color: var(--ink-faint); }
 
-  .board-tabs {
-    display: flex;
-    gap: 0;
-    margin-bottom: 1.75rem;
-    border-bottom: 1px solid var(--line);
-    overflow-x: auto;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-    user-select: none;
-  }
-
+  .board-tabs { display: flex; gap: 0; margin-bottom: 1.75rem; border-bottom: 1px solid var(--line); overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; user-select: none; }
   .board-tabs::-webkit-scrollbar { display: none; }
 
-  .board-tab {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.95rem;
-    letter-spacing: 0.03em;
-    padding: 0.5rem 1.1rem;
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--ink-light);
-    cursor: pointer;
-    white-space: nowrap;
-    margin-bottom: -1px;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
+  .board-tab { font-family: 'DM Sans', sans-serif; font-size: 0.95rem; letter-spacing: 0.03em; padding: 0.5rem 1.1rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--ink-light); cursor: pointer; white-space: nowrap; margin-bottom: -1px; transition: all 0.15s; display: flex; align-items: center; gap: 0.5rem; }
   .board-tab:hover { color: var(--ink); }
   .board-tab.active { color: var(--ink); border-bottom-color: var(--ink); }
   .board-tab.dragging { opacity: 0.4; }
   .board-tab.drag-over { border-bottom-color: var(--red); }
 
-  .board-tab-del {
-    font-size: 0.75rem;
-    opacity: 0;
-    color: var(--ink-faint);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0 2px;
-    transition: all 0.15s;
-  }
-
+  .board-tab-del { font-size: 0.75rem; opacity: 0; color: var(--ink-faint); background: none; border: none; cursor: pointer; padding: 0 2px; transition: all 0.15s; }
   .board-tab:hover .board-tab-del { opacity: 1; }
   .board-tab-del:hover { color: var(--red) !important; }
 
-  .board-tab-add {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.92rem;
-    padding: 0.5rem 0.75rem;
-    background: none;
-    border: none;
-    color: var(--ink-faint);
-    cursor: pointer;
-    margin-bottom: -1px;
-    transition: color 0.15s;
-  }
-
+  .board-tab-add { font-family: 'DM Sans', sans-serif; font-size: 0.92rem; padding: 0.5rem 0.75rem; background: none; border: none; color: var(--ink-faint); cursor: pointer; margin-bottom: -1px; transition: color 0.15s; }
   .board-tab-add:hover { color: var(--ink-light); }
 
-  .paper {
-    background: var(--paper);
-    border: 1px solid var(--line);
-    box-shadow: var(--shadow);
-    padding: 1.5rem 1.5rem 2rem;
-    position: relative;
-  }
+  .paper { background: var(--paper); border: 1px solid var(--line); box-shadow: var(--shadow); padding: 1.5rem 1.5rem 2rem; position: relative; }
+  .paper::before { content: ''; position: absolute; left: 3.25rem; top: 0; bottom: 0; width: 1px; background: var(--margin-line); opacity: 0.5; }
 
-  .paper::before {
-    content: '';
-    position: absolute;
-    left: 3.25rem;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: var(--margin-line);
-    opacity: 0.5;
-  }
-
-  .add-task-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.65rem 0.5rem 0.65rem 0;
-    border-bottom: 1px solid var(--line);
-    margin-left: 3.25rem;
-    transition: background 0.15s, border-color 0.15s;
-    border-radius: 6px;
-  }
-
-  .add-task-row.unsaved {
-    background: var(--unsaved);
-    border-bottom-color: var(--unsaved-border);
-    padding-left: 0.5rem;
-    margin-left: 2.75rem;
-  }
-
-  .add-task-input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 1.19rem;
-    color: var(--ink);
-    outline: none;
-    padding: 0;
-  }
-
+  .add-task-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.5rem 0.65rem 0; border-bottom: 1px solid var(--line); margin-left: 3.25rem; transition: background 0.15s, border-color 0.15s; border-radius: 6px; }
+  .add-task-row.unsaved { background: var(--unsaved); border-bottom-color: var(--unsaved-border); padding-left: 0.5rem; margin-left: 2.75rem; }
+  .add-task-input { flex: 1; border: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 1.19rem; color: var(--ink); outline: none; padding: 0; }
   .add-task-input::placeholder { color: var(--ink-faint); font-style: italic; }
-
-  .add-task-btn {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.875rem;
-    letter-spacing: 0.04em;
-    color: var(--ink-light);
-    background: none;
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    padding: 0.3rem 0.7rem;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
+  .add-task-btn { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; letter-spacing: 0.04em; color: var(--ink-light); background: none; border: 1px solid var(--line); border-radius: 4px; padding: 0.3rem 0.7rem; cursor: pointer; transition: all 0.15s; }
   .add-task-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
-  .task-section-label {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.8rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    margin: 1.25rem 0 0.5rem 3.25rem;
-  }
+  .task-section-label { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin: 1.25rem 0 0.5rem 3.25rem; }
 
   .task-item { border-bottom: 1px solid var(--line); }
+  .task-row { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; margin-left: 3.25rem; position: relative; }
+  .task-row:hover .task-action-btn.del { opacity: 1; }
 
-  .task-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.6rem 0;
-    margin-left: 3.25rem;
-    position: relative;
-  }
-
-  .task-cb {
-    width: 17px;
-    height: 17px;
-    border: 1.5px solid var(--ink-faint);
-    background: transparent;
-    cursor: pointer;
-    flex-shrink: 0;
-    margin-top: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s;
-  }
-
+  .task-cb { width: 17px; height: 17px; border: 1.5px solid var(--ink-faint); background: transparent; cursor: pointer; flex-shrink: 0; margin-top: 3px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
   .task-cb:hover { border-color: var(--ink); }
   .task-cb.checked { background: var(--check); border-color: var(--check); }
-  .task-cb.checked::after {
-    content: '';
-    width: 4px;
-    height: 8px;
-    border: 1.5px solid var(--paper);
-    border-top: none;
-    border-left: none;
-    transform: rotate(45deg) translate(-1px,-1px);
-    display: block;
-  }
+  .task-cb.checked::after { content: ''; width: 4px; height: 8px; border: 1.5px solid var(--paper); border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); display: block; }
 
   .task-text-wrap { flex: 1; min-width: 0; }
-
-  .task-title {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 1.19rem;
-    line-height: 1.4;
-    color: var(--ink);
-    cursor: text;
-    word-break: break-word;
-  }
-
+  .task-title { font-family: 'DM Sans', sans-serif; font-size: 1.19rem; line-height: 1.4; color: var(--ink); cursor: text; word-break: break-word; }
   .task-title.done { text-decoration: line-through; color: var(--ink-faint); }
   .task-title[contenteditable="true"] { outline: none; border-bottom: 1px dashed var(--ink-faint); }
 
-  .task-meta {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.8rem;
-    color: var(--ink-faint);
-    margin-top: 2px;
-    display: block;
-  }
+  .task-meta { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-faint); margin-top: 2px; display: block; }
 
+  .task-actions { display: flex; gap: 0.4rem; align-items: center; flex-shrink: 0; }
 
-  .task-actions {
-    display: flex;
-    gap: 0.4rem;
-    align-items: center;
-    flex-shrink: 0;
-  }
+  /* DO TODAY checkbox */
+  .today-cb { width: 18px; height: 18px; border: 1.5px solid var(--ink-faint); background: transparent; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; border-radius: 4px; }
+  .today-cb:hover { border-color: var(--blue); }
+  .today-cb.checked { background: var(--blue); border-color: var(--blue); }
+  .today-cb.checked::after { content: ''; width: 4px; height: 8px; border: 1.5px solid #fff; border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); display: block; }
+  .today-cb.small { width: 15px; height: 15px; }
 
-  .task-action-btn {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.85rem;
-    color: var(--ink-light);
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    padding: 4px 10px;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-
+  .task-action-btn { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--ink-light); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 4px 10px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
   .task-action-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .task-action-btn.del { opacity: 0; }
   .task-action-btn.del:hover { background: var(--red); border-color: var(--red); color: var(--paper); }
   .task-action-btn.has-subtasks { background: transparent; color: #b8860b; border-color: #b8860b; font-weight: 500; }
   [data-theme="dark"] .task-action-btn.has-subtasks { color: #f0c040; border-color: #f0c040; font-weight: 500; }
 
   .subtasks { margin-left: 3.5rem; display: none; }
   .subtasks.open { display: block; }
-
-  .subtask-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.6rem;
-    padding: 0.38rem 0;
-    border-bottom: 1px solid var(--line);
-  }
-
+  .subtask-row { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.38rem 0; border-bottom: 1px solid var(--line); }
   .subtask-row:last-child { border-bottom: none; }
-
-  .subtask-cb {
-    width: 13px;
-    height: 13px;
-    border: 1px solid var(--ink-faint);
-    background: transparent;
-    cursor: pointer;
-    flex-shrink: 0;
-    margin-top: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s;
-    border-radius: 50%;
-  }
-
+  .subtask-cb { width: 13px; height: 13px; border: 1px solid var(--ink-faint); background: transparent; cursor: pointer; flex-shrink: 0; margin-top: 4px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; border-radius: 50%; }
   .subtask-cb:hover { border-color: var(--ink); }
   .subtask-cb.checked { background: var(--check); border-color: var(--check); }
-  .subtask-cb.checked::after {
-    content: '';
-    width: 3px;
-    height: 6px;
-    border: 1px solid var(--paper);
-    border-top: none;
-    border-left: none;
-    transform: rotate(45deg) translate(-1px,-1px);
-    display: block;
-  }
+  .subtask-cb.checked::after { content: ''; width: 3px; height: 6px; border: 1px solid var(--paper); border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); display: block; }
 
-  .subtask-title {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 1.06rem;
-    color: var(--ink);
-    flex: 1;
-    cursor: text;
-    word-break: break-word;
-  }
-
+  .subtask-title { font-family: 'DM Sans', sans-serif; font-size: 1.06rem; color: var(--ink); flex: 1; cursor: text; word-break: break-word; }
   .subtask-title.done { text-decoration: line-through; color: var(--ink-faint); }
   .subtask-title[contenteditable="true"] { outline: none; border-bottom: 1px dashed var(--ink-faint); }
 
-  .subtask-del {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.8rem;
-    color: var(--ink-light);
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 20px;
-    padding: 3px 8px;
-    cursor: pointer;
-    opacity: 0;
-    transition: all 0.15s;
-  }
-
+  .subtask-actions { display: flex; gap: 0.4rem; align-items: center; flex-shrink: 0; }
+  .subtask-del { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-light); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; cursor: pointer; opacity: 0; transition: all 0.15s; }
   .subtask-row:hover .subtask-del { opacity: 1; }
   .subtask-del:hover { background: var(--red); border-color: var(--red); color: var(--paper); }
 
-  .add-subtask-row {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.35rem 0;
-    transition: background 0.15s;
-    border-radius: 6px;
-  }
-
+  .add-subtask-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0; transition: background 0.15s; border-radius: 6px; }
   .add-subtask-row.unsaved { background: var(--unsaved); padding-left: 0.4rem; }
-
-  .add-subtask-input {
-    flex: 1;
-    border: none;
-    border-bottom: 1px dashed var(--ink-faint);
-    background: transparent;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 1.06rem;
-    color: var(--ink);
-    outline: none;
-    padding: 0.15rem 0;
-  }
-
+  .add-subtask-input { flex: 1; border: none; border-bottom: 1px dashed var(--ink-faint); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 1.06rem; color: var(--ink); outline: none; padding: 0.15rem 0; }
   .add-subtask-input::placeholder { color: var(--ink-faint); font-style: italic; }
 
-  .empty {
-    font-family: 'DM Sans', sans-serif;
-    font-style: italic;
-    font-size: 1.1rem;
-    color: var(--ink-faint);
-    padding: 1.5rem 0 0.5rem 3.25rem;
-  }
+  .empty { font-family: 'DM Sans', sans-serif; font-style: italic; font-size: 1.1rem; color: var(--ink-faint); padding: 1.5rem 0 0.5rem 3.25rem; }
+
+  /* DO TODAY VIEW */
+  #today-view { display: none; }
+  .today-header { font-family: 'Syne', sans-serif; font-size: 0.95rem; color: var(--ink-light); margin-bottom: 1.25rem; }
+  .today-board-group { margin-bottom: 1.5rem; }
+  .today-board-label { font-family: 'Syne', sans-serif; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); padding: 0.5rem 0 0.4rem 3.25rem; border-bottom: 1px solid var(--line); }
+  .today-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--line); margin-left: 3.25rem; border-radius: 6px; }
+  .today-item.is-subtask { margin-left: 4.75rem; }
+  .today-complete-cb { width: 18px; height: 18px; border: 1.5px solid var(--ink-faint); background: transparent; cursor: pointer; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .today-complete-cb:hover { border-color: var(--ink); }
+  .today-complete-cb.checked { background: var(--check); border-color: var(--check); }
+  .today-complete-cb.checked::after { content: ''; width: 4px; height: 8px; border: 1.5px solid var(--paper); border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); display: block; }
+  .today-title { font-family: 'DM Sans', sans-serif; font-size: 1.1rem; color: var(--blue); flex: 1; font-weight: 500; }
+  .today-title.done { text-decoration: line-through; color: var(--ink-faint); font-weight: 400; }
+  .today-context { font-family: 'DM Sans', sans-serif; font-size: 0.78rem; color: var(--ink-faint); margin-top: 2px; }
 
   #history-view { display: none; }
-
-  .history-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 1.25rem;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-
+  .history-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
   .history-count { font-family: 'Syne', sans-serif; font-size: 0.95rem; color: var(--ink-light); }
   .history-filter { display: flex; gap: 1rem; }
-
-  .hist-btn {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.92rem;
-    color: var(--ink-light);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    border-bottom: 1px solid transparent;
-    transition: all 0.15s;
-  }
-
+  .hist-btn { font-family: 'DM Sans', sans-serif; font-size: 0.92rem; color: var(--ink-light); background: none; border: none; cursor: pointer; padding: 0; border-bottom: 1px solid transparent; transition: all 0.15s; }
   .hist-btn:hover { color: var(--ink); }
   .hist-btn.active { color: var(--ink); border-bottom-color: var(--ink); }
-
   .history-board-group { margin-bottom: 1.5rem; }
-
-  .history-board-label {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.85rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    padding: 0.5rem 0 0.4rem 3.25rem;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .history-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.6rem 0;
-    border-bottom: 1px solid var(--line);
-    margin-left: 3.25rem;
-  }
-
-  .history-check {
-    width: 17px;
-    height: 17px;
-    background: var(--ink-faint);
-    flex-shrink: 0;
-    margin-top: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-
+  .history-board-label { font-family: 'Syne', sans-serif; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); padding: 0.5rem 0 0.4rem 3.25rem; border-bottom: 1px solid var(--line); }
+  .history-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid var(--line); margin-left: 3.25rem; }
+  .history-check { width: 17px; height: 17px; background: var(--ink-faint); flex-shrink: 0; margin-top: 3px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s; }
   .history-check:hover { background: var(--ink); }
-  .history-check::after {
-    content: '';
-    width: 4px;
-    height: 8px;
-    border: 1.5px solid var(--paper);
-    border-top: none;
-    border-left: none;
-    transform: rotate(45deg) translate(-1px,-1px);
-    display: block;
-  }
-
+  .history-check::after { content: ''; width: 4px; height: 8px; border: 1.5px solid var(--paper); border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); display: block; }
   .history-title { font-family: 'DM Sans', sans-serif; font-size: 1.1rem; color: var(--ink-light); text-decoration: line-through; flex: 1; }
   .history-date { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-faint); flex-shrink: 0; margin-top: 4px; }
-
-  .history-del-btn {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.8rem;
-    color: var(--ink-light);
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 20px;
-    padding: 3px 8px;
-    cursor: pointer;
-    flex-shrink: 0;
-    margin-top: 2px;
-    opacity: 0;
-    transition: all 0.15s;
-  }
-
+  .history-del-btn { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-light); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; cursor: pointer; flex-shrink: 0; margin-top: 2px; opacity: 0; transition: all 0.15s; }
   .history-item:hover .history-del-btn { opacity: 1; }
   .history-del-btn:hover { background: var(--red); border-color: var(--red); color: var(--paper); }
-
   .history-subtasks { margin-left: 1.5rem; margin-top: 0.2rem; }
-
   .history-subtask-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.22rem 0; }
-
-  .history-subtask-cb {
-    width: 13px; height: 13px;
-    border: 1px solid var(--ink-faint);
-    background: transparent;
-    cursor: pointer;
-    flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 50%;
-    transition: all 0.15s;
-  }
-
+  .history-subtask-cb { width: 13px; height: 13px; border: 1px solid var(--ink-faint); background: transparent; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.15s; }
   .history-subtask-cb:hover { border-color: var(--ink); }
   .history-subtask-cb.checked { background: var(--check); border-color: var(--check); }
-  .history-subtask-cb.checked::after {
-    content: '';
-    width: 3px; height: 6px;
-    border: 1px solid var(--paper);
-    border-top: none; border-left: none;
-    transform: rotate(45deg) translate(-1px,-1px);
-    display: block;
-  }
-
+  .history-subtask-cb.checked::after { content: ''; width: 3px; height: 6px; border: 1px solid var(--paper); border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); display: block; }
   .history-subtask-title { font-family: 'DM Sans', sans-serif; font-size: 0.98rem; color: var(--ink-faint); text-decoration: line-through; }
 
   #trash-view { display: none; }
-
   .trash-board-group { margin-bottom: 1.75rem; }
-
-  .trash-board-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 0 0.4rem 3.25rem;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .trash-board-label {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.85rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-  }
-
-  .trash-restore-board {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.82rem;
-    color: var(--ink-light);
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 20px;
-    padding: 3px 10px;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-
+  .trash-board-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0 0.4rem 3.25rem; border-bottom: 1px solid var(--line); }
+  .trash-board-label { font-family: 'Syne', sans-serif; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+  .trash-restore-board { font-family: 'DM Sans', sans-serif; font-size: 0.82rem; color: var(--ink-light); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 3px 10px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
   .trash-restore-board:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-
-  .trash-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.6rem 0;
-    border-bottom: 1px solid var(--line);
-    margin-left: 3.25rem;
-  }
-
+  .trash-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid var(--line); margin-left: 3.25rem; }
   .trash-icon { width: 17px; height: 17px; flex-shrink: 0; margin-top: 3px; color: var(--ink-faint); font-size: 0.85rem; }
   .trash-title { font-family: 'DM Sans', sans-serif; font-size: 1.1rem; color: var(--ink-faint); flex: 1; }
   .trash-meta { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-faint); margin-top: 2px; }
-
-  .trash-restore {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.82rem;
-    color: var(--ink-light);
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 20px;
-    padding: 3px 10px;
-    cursor: pointer;
-    flex-shrink: 0;
-    margin-top: 2px;
-    transition: all 0.15s;
-  }
-
+  .trash-restore { font-family: 'DM Sans', sans-serif; font-size: 0.82rem; color: var(--ink-light); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 3px 10px; cursor: pointer; flex-shrink: 0; margin-top: 2px; transition: all 0.15s; }
   .trash-restore:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
-  .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.3);
-    display: none; align-items: center; justify-content: center;
-    z-index: 100;
-  }
-
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); display: none; align-items: center; justify-content: center; z-index: 100; }
   .modal-overlay.open { display: flex; }
-
-  .modal {
-    background: var(--paper);
-    border: 1px solid var(--line);
-    padding: 1.75rem; width: 340px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  }
-
+  .modal { background: var(--paper); border: 1px solid var(--line); padding: 1.75rem; width: 340px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
   .modal h3 { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 500; margin-bottom: 1rem; color: var(--ink); }
-
-  .modal input {
-    width: 100%; border: none;
-    border-bottom: 1.5px solid var(--ink-faint);
-    background: transparent;
-    font-family: 'DM Sans', sans-serif; font-size: 1.1rem;
-    padding: 0.4rem 0; color: var(--ink); outline: none;
-    margin-bottom: 1.25rem; transition: border-color 0.15s;
-  }
-
+  .modal input { width: 100%; border: none; border-bottom: 1.5px solid var(--ink-faint); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 1.1rem; padding: 0.4rem 0; color: var(--ink); outline: none; margin-bottom: 1.25rem; transition: border-color 0.15s; }
   .modal input:focus { border-color: var(--ink); }
-
   .confirm-msg { font-family: 'DM Sans', sans-serif; font-size: 1rem; color: var(--ink-light); margin-bottom: 1.25rem; line-height: 1.5; }
-
   .modal-btns { display: flex; gap: 0.75rem; justify-content: flex-end; }
-
-  .modal-btns button {
-    font-family: 'DM Sans', sans-serif; font-size: 0.92rem;
-    padding: 0.5rem 1.1rem;
-    border: 1px solid var(--line);
-    background: transparent; color: var(--ink);
-    cursor: pointer; transition: all 0.15s;
-  }
-
+  .modal-btns button { font-family: 'DM Sans', sans-serif; font-size: 0.92rem; padding: 0.5rem 1.1rem; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; transition: all 0.15s; }
   .modal-btns .ok { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   .modal-btns button:hover { opacity: 0.75; }
 
-  .toast {
-    position: fixed; bottom: 1.5rem; left: 50%;
-    transform: translateX(-50%) translateY(10px);
-    background: var(--ink); color: var(--paper);
-    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
-    padding: 0.55rem 1.1rem; opacity: 0;
-    transition: all 0.2s; pointer-events: none;
-    white-space: nowrap; z-index: 200;
-  }
-
+  .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--ink); color: var(--paper); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; padding: 0.55rem 1.1rem; opacity: 0; transition: all 0.2s; pointer-events: none; white-space: nowrap; z-index: 200; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   @media (max-width: 500px) {
     .paper::before { display: none; }
-    .task-row, .add-task-row, .task-section-label, .history-item, .history-board-label, .trash-item, .trash-board-header, .empty { margin-left: 0; }
+    .task-row, .add-task-row, .task-section-label, .history-item, .history-board-label, .trash-item, .trash-board-header, .empty, .today-item, .today-board-label { margin-left: 0; }
     .subtasks { margin-left: 1rem; }
+    .today-item.is-subtask { margin-left: 1rem; }
   }
 </style>
 </head>
@@ -749,11 +254,17 @@
   <div class="topbar">
     <h1>Tasks</h1>
     <div class="topbar-right">
+      <button class="top-btn today-btn" id="btn-today" onclick="showView('today')">Do Today</button>
       <button class="top-btn active" id="btn-tasks" onclick="showView('tasks')">Lists</button>
       <button class="top-btn" id="btn-history" onclick="showView('history')">Done</button>
       <button class="top-btn" id="btn-trash" onclick="showView('trash')">Bin</button>
       <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">Dark</button>
     </div>
+  </div>
+
+  <div id="today-view">
+    <div class="today-header" id="today-header"></div>
+    <div class="paper" id="today-content"></div>
   </div>
 
   <div id="tasks-view">
@@ -796,36 +307,20 @@ const SUPABASE_URL = 'https://ntyvgkpvmgmuinzxoczt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eXZna3B2bWdtdWluenhvY3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MjkxNDUsImV4cCI6MjA5ODAwNTE0NX0.nvmabXRJYfweyGpFFqDeWHKmcWq4AmthgWjZNdVdFao';
 const PASSWORD = 'ww';
 
-const H = {
-  'apikey': SUPABASE_KEY,
-  'Authorization': `Bearer ${SUPABASE_KEY}`,
-  'Content-Type': 'application/json',
-  'Prefer': 'return=representation'
-};
+const H = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
 
 async function api(method, path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method, headers: H,
-    body: body ? JSON.stringify(body) : undefined
-  });
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { method, headers: H, body: body ? JSON.stringify(body) : undefined });
   if (method === 'DELETE' || res.status === 204) return null;
   const text = await res.text();
   if (!res.ok) throw new Error(text);
   return text ? JSON.parse(text) : null;
 }
 
-// THEME
-function applyTheme(t) {
-  document.documentElement.setAttribute('data-theme', t);
-  document.getElementById('theme-btn').textContent = t === 'dark' ? 'Light' : 'Dark';
-  localStorage.setItem('theme', t);
-}
-function toggleTheme() {
-  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-}
+function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); document.getElementById('theme-btn').textContent = t === 'dark' ? 'Light' : 'Dark'; localStorage.setItem('theme', t); }
+function toggleTheme() { applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
 applyTheme(localStorage.getItem('theme') || 'light');
 
-// AUTH
 function tryLogin() {
   const val = document.getElementById('pw-input').value;
   if (val === PASSWORD) {
@@ -839,16 +334,11 @@ function tryLogin() {
   }
 }
 
-// STATE
 let boards = [], tasks = [], subtasks = [];
 let activeBoard = null, currentView = 'tasks', histFilter = 'week';
 let modalCallback = null, modalIsConfirm = false;
 
-async function init() {
-  await loadAll();
-  renderBoardTabs();
-  renderPaper();
-}
+async function init() { await loadAll(); renderBoardTabs(); renderPaper(); }
 
 async function loadAll() {
   [boards, tasks, subtasks] = await Promise.all([
@@ -859,18 +349,18 @@ async function loadAll() {
   if (boards.length && !activeBoard) activeBoard = boards[0].id;
 }
 
-// VIEWS
 function showView(v) {
   currentView = v;
+  document.getElementById('today-view').style.display = v === 'today' ? 'block' : 'none';
   document.getElementById('tasks-view').style.display = v === 'tasks' ? 'block' : 'none';
   document.getElementById('history-view').style.display = v === 'history' ? 'block' : 'none';
   document.getElementById('trash-view').style.display = v === 'trash' ? 'block' : 'none';
-  ['tasks','history','trash'].forEach(x => document.getElementById(`btn-${x}`).classList.toggle('active', x === v));
+  ['today','tasks','history','trash'].forEach(x => document.getElementById(`btn-${x}`).classList.toggle('active', x === v));
+  if (v === 'today') renderToday();
   if (v === 'history') renderHistory();
   if (v === 'trash') renderTrash();
 }
 
-// BOARD DRAG
 let dragSrcIndex = null;
 function setupBoardDrag() {
   document.querySelectorAll('.board-tab[draggable="true"]').forEach((tab, i) => {
@@ -890,7 +380,6 @@ function setupBoardDrag() {
   });
 }
 
-// BOARDS
 function renderBoardTabs() {
   const el = document.getElementById('board-tabs');
   el.innerHTML = '';
@@ -914,10 +403,7 @@ function renderBoardTabs() {
   add.textContent = '+ board';
   add.onclick = () => openModal('New board', 'Board name', 'Add', async name => {
     const nb = await api('POST', 'boards', { name, color: '#1a1a18', position: boards.length, is_deleted: false });
-    boards.push(nb[0]);
-    activeBoard = nb[0].id;
-    renderBoardTabs();
-    renderPaper();
+    boards.push(nb[0]); activeBoard = nb[0].id; renderBoardTabs(); renderPaper();
   });
   el.appendChild(add);
   setupBoardDrag();
@@ -926,24 +412,17 @@ function renderBoardTabs() {
 function confirmDeleteBoard(id, name) {
   openConfirm(`Delete "${name}"? The board and all its tasks will be moved to the bin and can be restored.`, 'Delete', async () => {
     const now = new Date().toISOString();
-    // Soft-delete the board
     await api('PATCH', `boards?id=eq.${id}`, { is_deleted: true, deleted_at: now });
-    // Soft-delete all tasks in the board
     const boardTasks = tasks.filter(t => t.board_id === id);
-    for (const t of boardTasks) {
-      await api('PATCH', `tasks?id=eq.${t.id}`, { is_deleted: true, deleted_at: now });
-      t.is_deleted = true; t.deleted_at = now;
-    }
+    for (const t of boardTasks) { await api('PATCH', `tasks?id=eq.${t.id}`, { is_deleted: true, deleted_at: now }); t.is_deleted = true; t.deleted_at = now; }
     boards = boards.filter(b => b.id !== id);
     tasks = tasks.filter(t => t.board_id !== id);
     activeBoard = boards[0]?.id || null;
-    renderBoardTabs();
-    renderPaper();
+    renderBoardTabs(); renderPaper();
     toast('Board moved to bin');
   });
 }
 
-// PAPER
 function renderPaper() {
   const el = document.getElementById('paper-content');
   if (!boards.length) { el.innerHTML = '<p class="empty">No boards yet — add one above.</p>'; return; }
@@ -955,12 +434,8 @@ function renderPaper() {
         onkeydown="if(event.key==='Enter')addTask()" />
       <button class="add-task-btn" onclick="addTask()">Add</button>
     </div>`;
-  if (!boardTasks.length) {
-    html += '<p class="empty">Nothing here yet.</p>';
-  } else {
-    html += '<div class="task-section-label">To do</div>';
-    boardTasks.forEach(t => { html += taskHTML(t); });
-  }
+  if (!boardTasks.length) html += '<p class="empty">Nothing here yet.</p>';
+  else { html += '<div class="task-section-label">To do</div>'; boardTasks.forEach(t => { html += taskHTML(t); }); }
   el.innerHTML = html;
 }
 
@@ -980,14 +455,14 @@ function taskHTML(t) {
       <div class="task-row">
         <div class="task-cb${t.completed ? ' checked' : ''}" onclick="toggleTask('${t.id}')"></div>
         <div class="task-text-wrap">
-          <div class="task-title${t.completed ? ' done' : ''}"
-            contenteditable="true"
+          <div class="task-title${t.completed ? ' done' : ''}" contenteditable="true"
             onblur="updateTaskTitle('${t.id}',this)"
             onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}"
           >${escHtml(t.title)}</div>
           <div class="task-meta">${created}${updated ? ' · '+updated : ''}</div>
         </div>
         <div class="task-actions">
+          <div class="today-cb${t.do_today ? ' checked' : ''}" title="Add to Do Today" onclick="toggleToday('task','${t.id}')"></div>
           <button class="task-action-btn${hasSubs ? ' has-subtasks' : ''}" id="sub-btn-${t.id}" onclick="toggleSubtasks('${t.id}')">Subtasks</button>
           <button class="task-action-btn del" onclick="deleteTask('${t.id}')">Delete</button>
         </div>
@@ -1006,7 +481,10 @@ function renderSubtasks(taskId, readOnly) {
       <div class="subtask-title${s.completed ? ' done' : ''}"
         ${readOnly ? '' : `contenteditable="true" onblur="updateSubtaskTitle('${s.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}"`}
       >${escHtml(s.title)}</div>
-      ${readOnly ? '' : `<button class="subtask-del" onclick="deleteSubtask('${s.id}','${taskId}')">Delete</button>`}
+      ${readOnly ? '' : `<div class="subtask-actions">
+        <div class="today-cb small${s.do_today ? ' checked' : ''}" title="Add to Do Today" onclick="toggleToday('subtask','${s.id}','${taskId}')"></div>
+        <button class="subtask-del" onclick="deleteSubtask('${s.id}','${taskId}')">Delete</button>
+      </div>`}
     </div>`).join('');
   if (!readOnly) {
     html += `
@@ -1032,15 +510,33 @@ function toggleSubtasks(taskId) {
   else el.classList.remove('open');
 }
 
-// TASK ACTIONS
+// DO TODAY toggle
+async function toggleToday(type, id, taskId) {
+  if (type === 'task') {
+    const t = tasks.find(t => t.id === id);
+    if (!t) return;
+    t.do_today = !t.do_today;
+    await api('PATCH', `tasks?id=eq.${id}`, { do_today: t.do_today });
+    const cb = document.querySelector(`#task-${id} .today-cb`);
+    if (cb) cb.classList.toggle('checked', t.do_today);
+    toast(t.do_today ? 'Added to Do Today' : 'Removed from Do Today');
+  } else {
+    const s = subtasks.find(s => s.id === id);
+    if (!s) return;
+    s.do_today = !s.do_today;
+    await api('PATCH', `subtasks?id=eq.${id}`, { do_today: s.do_today });
+    renderSubtasks(taskId, false);
+    toast(s.do_today ? 'Added to Do Today' : 'Removed from Do Today');
+  }
+}
+
 async function addTask() {
   const input = document.getElementById('new-task-input');
   const title = input.value.trim();
   if (!title || !activeBoard) return;
   input.value = ''; updateAddRowState();
   const res = await api('POST', 'tasks', { board_id: activeBoard, title, position: tasks.filter(t => t.board_id === activeBoard).length });
-  tasks.push(res[0]);
-  renderPaper();
+  tasks.push(res[0]); renderPaper();
   setTimeout(() => document.getElementById('new-task-input')?.focus(), 50);
 }
 
@@ -1066,11 +562,11 @@ async function deleteTask(id) {
   await api('PATCH', `tasks?id=eq.${id}`, { is_deleted: true, deleted_at: now });
   tasks = tasks.filter(x => x.id !== id);
   if (currentView === 'history') renderHistory();
+  else if (currentView === 'today') renderToday();
   else renderPaper();
   toast('Moved to bin');
 }
 
-// SUBTASK ACTIONS
 async function addSubtask(taskId) {
   const input = document.getElementById(`sub-input-${taskId}`);
   const title = input.value.trim();
@@ -1117,7 +613,91 @@ async function deleteSubtask(id, taskId) {
   toast('Subtask moved to bin');
 }
 
-// HISTORY
+// DO TODAY VIEW
+function renderToday() {
+  const el = document.getElementById('today-content');
+  const headerEl = document.getElementById('today-header');
+
+  const todayTasks = tasks.filter(t => t.do_today);
+  const todaySubs = subtasks.filter(s => s.do_today);
+
+  const totalOpen = todayTasks.filter(t => !t.completed).length + todaySubs.filter(s => !s.completed).length;
+  headerEl.textContent = (todayTasks.length || todaySubs.length) ? `${totalOpen} item${totalOpen !== 1 ? 's' : ''} left for today` : '';
+
+  if (!todayTasks.length && !todaySubs.length) {
+    el.innerHTML = '<p class="empty">Nothing flagged for today. Check the blue box on any task or subtask to add it here.</p>';
+    return;
+  }
+
+  // Group everything by board
+  const byBoard = {};
+  todayTasks.forEach(t => {
+    if (!byBoard[t.board_id]) byBoard[t.board_id] = { tasks: [], subs: [] };
+    byBoard[t.board_id].tasks.push(t);
+  });
+  todaySubs.forEach(s => {
+    const parent = tasks.find(t => t.id === s.task_id);
+    const bid = parent?.board_id || 'unknown';
+    if (!byBoard[bid]) byBoard[bid] = { tasks: [], subs: [] };
+    byBoard[bid].subs.push({ sub: s, parent });
+  });
+
+  let html = '';
+  Object.entries(byBoard).forEach(([bid, group]) => {
+    const board = boards.find(b => b.id === bid);
+    html += `<div class="today-board-group"><div class="today-board-label">${board ? escHtml(board.name) : 'Unknown'}</div>`;
+
+    group.tasks.forEach(t => {
+      html += `
+        <div class="today-item">
+          <div class="today-complete-cb${t.completed ? ' checked' : ''}" onclick="toggleTask('${t.id}');setTimeout(renderToday,150)"></div>
+          <div style="flex:1">
+            <div class="today-title${t.completed ? ' done' : ''}">${escHtml(t.title)}</div>
+            <div class="today-context">Task</div>
+          </div>
+          <div class="today-cb checked" title="Remove from Do Today" onclick="removeFromToday('task','${t.id}')"></div>
+        </div>`;
+    });
+
+    group.subs.forEach(({ sub, parent }) => {
+      html += `
+        <div class="today-item is-subtask">
+          <div class="today-complete-cb${sub.completed ? ' checked' : ''}" onclick="toggleSubtaskComplete('${sub.id}')"></div>
+          <div style="flex:1">
+            <div class="today-title${sub.completed ? ' done' : ''}">${escHtml(sub.title)}</div>
+            <div class="today-context">Subtask of: ${parent ? escHtml(parent.title) : 'Unknown task'}</div>
+          </div>
+          <div class="today-cb checked" title="Remove from Do Today" onclick="removeFromToday('subtask','${sub.id}')"></div>
+        </div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+async function toggleSubtaskComplete(id) {
+  const s = subtasks.find(s => s.id === id);
+  if (!s) return;
+  const completed = !s.completed;
+  s.completed = completed; s.completed_at = completed ? new Date().toISOString() : null;
+  await api('PATCH', `subtasks?id=eq.${id}`, { completed, completed_at: s.completed_at });
+  renderToday();
+}
+
+async function removeFromToday(type, id) {
+  if (type === 'task') {
+    const t = tasks.find(t => t.id === id);
+    if (t) { t.do_today = false; await api('PATCH', `tasks?id=eq.${id}`, { do_today: false }); }
+  } else {
+    const s = subtasks.find(s => s.id === id);
+    if (s) { s.do_today = false; await api('PATCH', `subtasks?id=eq.${id}`, { do_today: false }); }
+  }
+  renderToday();
+  toast('Removed from Do Today');
+}
+
 function setHistFilter(f, btn) {
   histFilter = f;
   document.querySelectorAll('.hist-btn').forEach(b => b.classList.remove('active'));
@@ -1187,57 +767,37 @@ async function uncompleteTask(id) {
   toast('Moved back to list');
 }
 
-// TRASH
 async function renderTrash() {
   const el = document.getElementById('trash-content');
   const now = new Date();
-
   const [deletedBoards, deletedTasks, deletedSubtasks] = await Promise.all([
     api('GET', 'boards?is_deleted=eq.true&order=deleted_at.desc'),
     api('GET', 'tasks?is_deleted=eq.true&order=deleted_at.desc'),
     api('GET', 'subtasks?is_deleted=eq.true&order=deleted_at.desc')
   ]);
-
   const THIRTY = 30*24*60*60*1000;
   for (const b of deletedBoards) { if (b.deleted_at && (now - new Date(b.deleted_at)) > THIRTY) await api('DELETE', `boards?id=eq.${b.id}`); }
   for (const t of deletedTasks) { if (t.deleted_at && (now - new Date(t.deleted_at)) > THIRTY) await api('DELETE', `tasks?id=eq.${t.id}`); }
   for (const s of deletedSubtasks) { if (s.deleted_at && (now - new Date(s.deleted_at)) > THIRTY) await api('DELETE', `subtasks?id=eq.${s.id}`); }
-
   const activeBoards = deletedBoards.filter(b => !b.deleted_at || (now - new Date(b.deleted_at)) <= THIRTY);
   const activeTasks = deletedTasks.filter(t => !t.deleted_at || (now - new Date(t.deleted_at)) <= THIRTY);
   const activeSubs = deletedSubtasks.filter(s => !s.deleted_at || (now - new Date(s.deleted_at)) <= THIRTY);
-
-  if (!activeBoards.length && !activeTasks.length && !activeSubs.length) {
-    el.innerHTML = '<p class="empty">Bin is empty.</p>';
-    return;
-  }
-
+  if (!activeBoards.length && !activeTasks.length && !activeSubs.length) { el.innerHTML = '<p class="empty">Bin is empty.</p>'; return; }
   let html = '';
   const deletedBoardIds = new Set(activeBoards.map(b => b.id));
-
-  // Deleted boards with their tasks
   activeBoards.forEach(b => {
     const boardTasks = activeTasks.filter(t => t.board_id === b.id);
     const daysLeft = b.deleted_at ? Math.max(0, 30 - Math.floor((now - new Date(b.deleted_at)) / (24*60*60*1000))) : 30;
     html += `<div class="trash-board-group">
       <div class="trash-board-header">
-        <div>
-          <div class="trash-board-label">${escHtml(b.name)}</div>
-          <div class="trash-meta">Deleted ${formatDate(b.deleted_at)} · purges in ${daysLeft}d</div>
-        </div>
+        <div><div class="trash-board-label">${escHtml(b.name)}</div><div class="trash-meta">Deleted ${formatDate(b.deleted_at)} · purges in ${daysLeft}d</div></div>
         <button class="trash-restore-board" onclick="restoreBoard('${b.id}')">Restore board</button>
       </div>`;
     boardTasks.forEach(t => {
-      html += `<div class="trash-item">
-        <div class="trash-icon">—</div>
-        <div style="flex:1"><div class="trash-title">${escHtml(t.title)}</div></div>
-        <button class="trash-restore" disabled title="Restore board first" style="opacity:0.35;cursor:not-allowed;">Restore board first</button>
-      </div>`;
+      html += `<div class="trash-item"><div class="trash-icon">—</div><div style="flex:1"><div class="trash-title">${escHtml(t.title)}</div></div><button class="trash-restore" disabled title="Restore board first" style="opacity:0.35;cursor:not-allowed;">Restore board first</button></div>`;
     });
     html += `</div>`;
   });
-
-  // Orphan tasks (board still exists) grouped by board
   const orphanTasks = activeTasks.filter(t => !deletedBoardIds.has(t.board_id));
   if (orphanTasks.length) {
     const orphanGroups = {};
@@ -1247,62 +807,39 @@ async function renderTrash() {
       html += `<div class="trash-board-group"><div class="trash-board-header"><div class="trash-board-label">${board ? escHtml(board.name) : 'Unknown board'}</div></div>`;
       bTasks.forEach(t => {
         const daysLeft = t.deleted_at ? Math.max(0, 30 - Math.floor((now - new Date(t.deleted_at)) / (24*60*60*1000))) : 30;
-        // Find deleted subtasks belonging to this task
-        const taskDeletedSubs = activeSubs.filter(s => s.task_id === t.id);
-        html += `<div class="trash-item">
-          <div class="trash-icon">—</div>
-          <div style="flex:1">
-            <div class="trash-title">${escHtml(t.title)}</div>
-            <div class="trash-meta">Deleted ${formatDate(t.deleted_at)} · purges in ${daysLeft}d</div>
-          </div>
-          <button class="trash-restore" onclick="restoreTask('${t.id}','${bid}')">Restore</button>
-        </div>`;
+        html += `<div class="trash-item"><div class="trash-icon">—</div><div style="flex:1"><div class="trash-title">${escHtml(t.title)}</div><div class="trash-meta">Deleted ${formatDate(t.deleted_at)} · purges in ${daysLeft}d</div></div><button class="trash-restore" onclick="restoreTask('${t.id}','${bid}')">Restore</button></div>`;
       });
       html += `</div>`;
     });
   }
-
-  // Orphan subtasks (task still exists, only subtask was deleted) grouped by board
   const taskIds = new Set([...activeTasks.map(t => t.id)]);
   const orphanSubs = activeSubs.filter(s => !taskIds.has(s.task_id));
   if (orphanSubs.length) {
-    // Group by board via tasks lookup
     const subGroups = {};
     orphanSubs.forEach(s => {
-      const parentTask = tasks.find(t => t.id === s.task_id) || subtasks.find(x => x.task_id === s.task_id);
+      const parentTask = tasks.find(t => t.id === s.task_id);
       const bid = parentTask?.board_id || 'unknown';
       if (!subGroups[bid]) subGroups[bid] = [];
-      subGroups[bid].push({ sub: s, parentTask });
+      subGroups[bid].push(s);
     });
     Object.entries(subGroups).forEach(([bid, items]) => {
       const board = boards.find(b => b.id === bid);
       html += `<div class="trash-board-group"><div class="trash-board-header"><div class="trash-board-label">${board ? escHtml(board.name) : 'Unknown'} — subtasks</div></div>`;
-      items.forEach(({ sub, parentTask }) => {
+      items.forEach(sub => {
         const daysLeft = sub.deleted_at ? Math.max(0, 30 - Math.floor((now - new Date(sub.deleted_at)) / (24*60*60*1000))) : 30;
         const parentTitle = tasks.find(t => t.id === sub.task_id)?.title || 'Unknown task';
-        html += `<div class="trash-item">
-          <div class="trash-icon">—</div>
-          <div style="flex:1">
-            <div class="trash-title">${escHtml(sub.title)}</div>
-            <div class="trash-meta">From: ${escHtml(parentTitle)} · purges in ${daysLeft}d</div>
-          </div>
-          <button class="trash-restore" onclick="restoreSubtask('${sub.id}')">Restore</button>
-        </div>`;
+        html += `<div class="trash-item"><div class="trash-icon">—</div><div style="flex:1"><div class="trash-title">${escHtml(sub.title)}</div><div class="trash-meta">From: ${escHtml(parentTitle)} · purges in ${daysLeft}d</div></div><button class="trash-restore" onclick="restoreSubtask('${sub.id}')">Restore</button></div>`;
       });
       html += `</div>`;
     });
   }
-
   el.innerHTML = html;
 }
 
 async function restoreBoard(boardId) {
   await api('PATCH', `boards?id=eq.${boardId}`, { is_deleted: false, deleted_at: null });
   await api('PATCH', `tasks?board_id=eq.${boardId}&is_deleted=eq.true`, { is_deleted: false, deleted_at: null });
-  await loadAll();
-  renderBoardTabs();
-  renderPaper();
-  renderTrash();
+  await loadAll(); renderBoardTabs(); renderPaper(); renderTrash();
   toast('Board restored');
 }
 
@@ -1326,7 +863,6 @@ async function restoreSubtask(subId) {
   toast('Subtask restored');
 }
 
-// MODAL
 function openModal(title, placeholder, okLabel, cb) {
   modalIsConfirm = false;
   document.getElementById('modal-title').textContent = title;
@@ -1346,36 +882,20 @@ function openConfirm(message, okLabel, cb) {
   document.getElementById('modal').classList.add('open');
 }
 
-function closeModal() {
-  document.getElementById('modal').classList.remove('open');
-  modalCallback = null; modalIsConfirm = false;
-}
+function closeModal() { document.getElementById('modal').classList.remove('open'); modalCallback = null; modalIsConfirm = false; }
 
 async function modalConfirm() {
   const cb = modalCallback; if (!cb) return;
   if (modalIsConfirm) { closeModal(); await cb(); }
-  else {
-    const val = document.getElementById('modal-input')?.value.trim();
-    if (!val) return;
-    closeModal(); await cb(val);
-  }
+  else { const val = document.getElementById('modal-input')?.value.trim(); if (!val) return; closeModal(); await cb(val); }
 }
 
 document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 
-// UTILS
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function formatDate(iso) { if (!iso) return ''; return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
-function formatMeta(label, iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return `${label} ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})} at ${d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
-}
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
-}
+function formatMeta(label, iso) { if (!iso) return ''; const d = new Date(iso); return `${label} ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})} at ${d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`; }
+function toast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2500); }
 
 if (sessionStorage.getItem('auth') === '1') {
   document.getElementById('login-screen').style.display = 'none';
