@@ -1151,9 +1151,10 @@ function closeModal() {
 
 async function modalConfirm() {
   const val = document.getElementById('modal-input').value.trim();
-  if (!val || !modalCallback) return;
+  if (!val) return;
+  const cb = modalCallback;
   closeModal();
-  await modalCallback(val);
+  if (typeof cb === 'function') await cb(val);
 }
 
 document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
