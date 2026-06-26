@@ -145,6 +145,7 @@
   .theme-toggle {
     background: none;
     border: 1px solid var(--line);
+    border-radius: 4px;
     color: var(--ink-light);
     cursor: pointer;
     font-size: 0.85rem;
@@ -276,6 +277,7 @@
     color: var(--ink-light);
     background: none;
     border: 1px solid var(--line);
+    border-radius: 4px;
     padding: 0.3rem 0.7rem;
     cursor: pointer;
     transition: all 0.15s;
@@ -302,8 +304,6 @@
     margin-left: 3.25rem;
     position: relative;
   }
-
-  .task-row:hover .task-actions { opacity: 1; }
 
   .task-cb {
     width: 17px;
@@ -351,32 +351,14 @@
     font-size: 0.8rem;
     color: var(--ink-faint);
     margin-top: 2px;
-    display: none;
+    display: block;
   }
 
-  .task-item:hover .task-meta { display: block; }
-
-  .subtask-indicator {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.95rem;
-    color: var(--ink-faint);
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 20px;
-    padding: 2px 10px;
-    white-space: nowrap;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-
-  .subtask-indicator.all-done { color: var(--ink-light); border-color: var(--ink-faint); }
 
   .task-actions {
     display: flex;
     gap: 0.4rem;
     align-items: center;
-    opacity: 0;
-    transition: opacity 0.15s;
     flex-shrink: 0;
   }
 
@@ -386,7 +368,7 @@
     color: var(--ink-light);
     background: var(--bg);
     border: 1px solid var(--line);
-    border-radius: 20px;
+    border-radius: 4px;
     padding: 4px 10px;
     cursor: pointer;
     transition: all 0.15s;
@@ -395,6 +377,8 @@
 
   .task-action-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   .task-action-btn.del:hover { background: var(--red); border-color: var(--red); color: var(--paper); }
+  .task-action-btn.has-subtasks { background: transparent; color: #b8860b; border-color: #b8860b; font-weight: 500; }
+  [data-theme="dark"] .task-action-btn.has-subtasks { color: #f0c040; border-color: #f0c040; font-weight: 500; }
 
   .subtasks { margin-left: 3.5rem; display: none; }
   .subtasks.open { display: block; }
@@ -988,10 +972,7 @@ function updateAddRowState() {
 
 function taskHTML(t) {
   const subs = subtasks.filter(s => s.task_id === t.id);
-  const doneCount = subs.filter(s => s.completed).length;
-  const subIndicator = subs.length
-    ? `<div class="subtask-indicator${doneCount === subs.length ? ' all-done' : ''}">${doneCount}/${subs.length}</div>`
-    : '';
+  const hasSubs = subs.length > 0;
   const created = formatMeta('Created', t.created_at);
   const updated = t.updated_at && t.updated_at !== t.created_at ? formatMeta('Edited', t.updated_at) : '';
   return `
@@ -1006,9 +987,8 @@ function taskHTML(t) {
           >${escHtml(t.title)}</div>
           <div class="task-meta">${created}${updated ? ' · '+updated : ''}</div>
         </div>
-        ${subIndicator}
         <div class="task-actions">
-          <button class="task-action-btn" onclick="toggleSubtasks('${t.id}')">Subtasks</button>
+          <button class="task-action-btn${hasSubs ? ' has-subtasks' : ''}" id="sub-btn-${t.id}" onclick="toggleSubtasks('${t.id}')">Subtasks</button>
           <button class="task-action-btn del" onclick="deleteTask('${t.id}')">Delete</button>
         </div>
       </div>
@@ -1117,9 +1097,8 @@ async function toggleSubtask(id, taskId) {
 
 function refreshIndicator(taskId) {
   const subs = subtasks.filter(s => s.task_id === taskId);
-  const doneCount = subs.filter(s => s.completed).length;
-  const indEl = document.querySelector(`#task-${taskId} .subtask-indicator`);
-  if (indEl) { indEl.textContent = `${doneCount}/${subs.length}`; indEl.className = `subtask-indicator${doneCount === subs.length ? ' all-done' : ''}`; }
+  const btn = document.getElementById(`sub-btn-${taskId}`);
+  if (btn) btn.className = `task-action-btn${subs.length > 0 ? ' has-subtasks' : ''}`;
 }
 
 async function updateSubtaskTitle(id, el) {
@@ -1252,7 +1231,7 @@ async function renderTrash() {
       html += `<div class="trash-item">
         <div class="trash-icon">—</div>
         <div style="flex:1"><div class="trash-title">${escHtml(t.title)}</div></div>
-        <button class="trash-restore" onclick="restoreTask('${t.id}','${b.id}')">Restore task</button>
+        <button class="trash-restore" disabled title="Restore board first" style="opacity:0.35;cursor:not-allowed;">Restore board first</button>
       </div>`;
     });
     html += `</div>`;
