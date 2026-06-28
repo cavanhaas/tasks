@@ -104,7 +104,12 @@
 
   .task-section-label { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin: 1.25rem 0 0.5rem 3.25rem; }
 
-  .task-item { border-bottom: 1px solid var(--line); }
+  .task-item { border-bottom: 1px solid var(--line); position: relative; }
+  .task-item.drag-over-top::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--blue); z-index: 10; }
+  .task-item.drag-over-bottom::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--blue); z-index: 10; }
+  .task-item.dragging { opacity: 0.4; }
+  .task-drag-handle { position: absolute; left: 0; top: 0; bottom: 0; width: 3.25rem; cursor: grab; z-index: 2; }
+  .task-drag-handle:active { cursor: grabbing; }
   .task-row { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; margin-left: 3.25rem; position: relative; }
 
   .task-cb { width: 17px; height: 17px; border: 1.5px solid var(--ink-faint); background: transparent; cursor: pointer; flex-shrink: 0; margin-top: 3px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
@@ -137,8 +142,13 @@
 
   .subtasks { margin-left: 3.5rem; display: none; }
   .subtasks.open { display: block; }
-  .subtask-row { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.38rem 0; border-bottom: 1px solid var(--line); }
+  .subtask-row { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.38rem 0; border-bottom: 1px solid var(--line); position: relative; }
   .subtask-row:last-child { border-bottom: none; }
+  .subtask-row.drag-over-top::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--blue); z-index: 10; }
+  .subtask-row.drag-over-bottom::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--blue); z-index: 10; }
+  .subtask-row.dragging { opacity: 0.4; }
+  .subtask-drag-handle { width: 18px; height: 100%; cursor: grab; flex-shrink: 0; margin-top: 4px; }
+  .subtask-drag-handle:active { cursor: grabbing; }
   .subtask-cb { width: 13px; height: 13px; border: 1px solid var(--ink-faint); background: transparent; cursor: pointer; flex-shrink: 0; margin-top: 4px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; border-radius: 50%; }
   .subtask-cb:hover { border-color: var(--ink); }
   .subtask-cb.checked { background: var(--check); border-color: var(--check); }
@@ -344,7 +354,10 @@ async function loadAll() {
     api('GET', 'tasks?is_deleted=eq.false&order=position'),
     api('GET', 'subtasks?is_deleted=eq.false&order=position')
   ]);
-  if (boards.length && !activeBoard) activeBoard = boards[0].id;
+  if (boards.length && !activeBoard) {
+    const saved = localStorage.getItem('lastBoard');
+    activeBoard = (saved && boards.find(b => b.id === saved)) ? saved : boards[0].id;
+  }
 }
 
 function showView(v) {
@@ -388,7 +401,7 @@ function renderBoardTabs() {
     const nameSpan = document.createElement('span');
     nameSpan.textContent = b.name;
     btn.appendChild(nameSpan);
-    btn.onclick = e => { if (e.target.classList.contains('board-tab-del')) return; activeBoard = b.id; renderBoardTabs(); renderPaper(); };
+    btn.onclick = e => { if (e.target.classList.contains('board-tab-del')) return; activeBoard = b.id; localStorage.setItem('lastBoard', b.id); renderBoardTabs(); renderPaper(); };
     const del = document.createElement('button');
     del.className = 'board-tab-del';
     del.textContent = '✕';
@@ -435,6 +448,7 @@ function renderPaper() {
   if (!boardTasks.length) html += '<p class="empty">Nothing here yet.</p>';
   else { html += '<div class="task-section-label">To do</div>'; boardTasks.forEach(t => { html += taskHTML(t); }); }
   el.innerHTML = html;
+  setTimeout(setupTaskDrag, 0);
 }
 
 function updateAddRowState() {
@@ -450,6 +464,7 @@ function taskHTML(t) {
   const updated = t.updated_at && t.updated_at !== t.created_at ? formatMeta('Edited', t.updated_at) : '';
   return `
     <div class="task-item" id="task-${t.id}">
+      <div class="task-drag-handle" data-task-id="${t.id}"></div>
       <div class="task-row">
         <div class="task-cb${t.completed ? ' checked' : ''}" onclick="toggleTask('${t.id}')"></div>
         <div class="task-text-wrap">
@@ -474,7 +489,8 @@ function renderSubtasks(taskId, readOnly) {
   if (!el) return;
   const subs = subtasks.filter(s => s.task_id === taskId);
   let html = subs.map(s => `
-    <div class="subtask-row" id="sub-${s.id}">
+    <div class="subtask-row" id="sub-${s.id}" data-subtask-id="${s.id}" data-task-id="${taskId}">
+      <div class="subtask-drag-handle" data-subtask-id="${s.id}" data-task-id="${taskId}"></div>
       <div class="subtask-cb${s.completed ? ' checked' : ''}" onclick="toggleSubtask('${s.id}','${taskId}')"></div>
       <div class="subtask-title${s.completed ? ' done' : ''}"
         ${readOnly ? '' : `contenteditable="true" onblur="updateSubtaskTitle('${s.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}"`}
@@ -493,6 +509,7 @@ function renderSubtasks(taskId, readOnly) {
       </div>`;
   }
   el.innerHTML = html;
+  if (!readOnly) setupSubtaskDrag(taskId);
 }
 
 function updateSubRowState(taskId) {
@@ -893,6 +910,160 @@ function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'
 function formatDate(iso) { if (!iso) return ''; return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
 function formatMeta(label, iso) { if (!iso) return ''; const d = new Date(iso); return `${label} ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})} at ${d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`; }
 function toast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2500); }
+
+// TASK DRAG AND DROP
+function setupTaskDrag() {
+  const taskItems = document.querySelectorAll('.task-item[id^="task-"]');
+  taskItems.forEach(item => {
+    const handle = item.querySelector('.task-drag-handle');
+    if (!handle) return;
+
+    handle.addEventListener('mousedown', () => { item.draggable = true; });
+    handle.addEventListener('mouseup', () => { item.draggable = false; });
+
+    item.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('taskId', item.id.replace('task-', ''));
+      e.dataTransfer.effectAllowed = 'move';
+      // Close subtasks on task drag
+      const subtasksEl = item.querySelector('.subtasks');
+      if (subtasksEl) subtasksEl.classList.remove('open');
+      setTimeout(() => item.classList.add('dragging'), 0);
+    });
+
+    item.addEventListener('dragend', () => {
+      item.draggable = false;
+      item.classList.remove('dragging');
+      document.querySelectorAll('.task-item').forEach(i => {
+        i.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+    });
+
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      const draggingId = e.dataTransfer.getData('taskId');
+      if (!draggingId) return;
+      // Only accept task drags, not subtask drags
+      if (e.dataTransfer.types.includes('subtaskid')) return;
+      document.querySelectorAll('.task-item').forEach(i => i.classList.remove('drag-over-top', 'drag-over-bottom'));
+      const rect = item.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      if (e.clientY < mid) item.classList.add('drag-over-top');
+      else item.classList.add('drag-over-bottom');
+    });
+
+    item.addEventListener('dragleave', e => {
+      if (!item.contains(e.relatedTarget)) {
+        item.classList.remove('drag-over-top', 'drag-over-bottom');
+      }
+    });
+
+    item.addEventListener('drop', async e => {
+      e.preventDefault();
+      const draggedId = e.dataTransfer.getData('taskId');
+      const droppedOnId = item.id.replace('task-', '');
+      if (!draggedId || draggedId === droppedOnId) return;
+
+      const rect = item.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      const insertBefore = e.clientY < mid;
+
+      item.classList.remove('drag-over-top', 'drag-over-bottom');
+
+      // Reorder in local array
+      const boardTasks = tasks.filter(t => t.board_id === activeBoard && !t.completed && !t.is_deleted);
+      const fromIdx = boardTasks.findIndex(t => t.id === draggedId);
+      const toIdx = boardTasks.findIndex(t => t.id === droppedOnId);
+      if (fromIdx === -1 || toIdx === -1) return;
+
+      const [moved] = boardTasks.splice(fromIdx, 1);
+      const insertAt = fromIdx < toIdx ? (insertBefore ? toIdx - 1 : toIdx) : (insertBefore ? toIdx : toIdx + 1);
+      boardTasks.splice(Math.max(0, insertAt), 0, moved);
+
+      // Update positions in tasks array and re-render
+      boardTasks.forEach((t, idx) => { t.position = idx; });
+      renderPaper();
+
+      // Save to Supabase
+      for (const t of boardTasks) {
+        await api('PATCH', `tasks?id=eq.${t.id}`, { position: t.position });
+      }
+    });
+  });
+}
+
+// SUBTASK DRAG AND DROP
+function setupSubtaskDrag(taskId) {
+  const container = document.getElementById(`subtasks-${taskId}`);
+  if (!container) return;
+  const rows = container.querySelectorAll('.subtask-row[data-subtask-id]');
+
+  rows.forEach(row => {
+    const handle = row.querySelector('.subtask-drag-handle');
+    if (!handle) return;
+    const sid = row.dataset.subtaskId;
+
+    handle.addEventListener('mousedown', () => { row.draggable = true; });
+    handle.addEventListener('mouseup', () => { row.draggable = false; });
+
+    row.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('subtaskId', sid);
+      e.dataTransfer.setData('subtaskid', sid); // lowercase for type check
+      e.dataTransfer.setData('parentTaskId', taskId);
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => row.classList.add('dragging'), 0);
+    });
+
+    row.addEventListener('dragend', () => {
+      row.draggable = false;
+      row.classList.remove('dragging');
+      container.querySelectorAll('.subtask-row').forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
+    });
+
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.stopPropagation(); // prevent task dragover from firing
+      const parentId = e.dataTransfer.getData('parentTaskId');
+      if (parentId && parentId !== taskId) return; // different task, ignore
+      container.querySelectorAll('.subtask-row').forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
+      const rect = row.getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) row.classList.add('drag-over-top');
+      else row.classList.add('drag-over-bottom');
+    });
+
+    row.addEventListener('dragleave', e => {
+      if (!row.contains(e.relatedTarget)) row.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+
+    row.addEventListener('drop', async e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const draggedId = e.dataTransfer.getData('subtaskId');
+      if (!draggedId || draggedId === sid) return;
+
+      const rect = row.getBoundingClientRect();
+      const insertBefore = e.clientY < rect.top + rect.height / 2;
+      row.classList.remove('drag-over-top', 'drag-over-bottom');
+
+      const taskSubs = subtasks.filter(s => s.task_id === taskId);
+      const fromIdx = taskSubs.findIndex(s => s.id === draggedId);
+      const toIdx = taskSubs.findIndex(s => s.id === sid);
+      if (fromIdx === -1 || toIdx === -1) return;
+
+      const [moved] = taskSubs.splice(fromIdx, 1);
+      const insertAt = fromIdx < toIdx ? (insertBefore ? toIdx - 1 : toIdx) : (insertBefore ? toIdx : toIdx + 1);
+      taskSubs.splice(Math.max(0, insertAt), 0, moved);
+      taskSubs.forEach((s, idx) => { s.position = idx; });
+
+      renderSubtasks(taskId, false);
+      document.getElementById(`subtasks-${taskId}`)?.classList.add('open');
+      setupSubtaskDrag(taskId);
+
+      for (const s of taskSubs) {
+        await api('PATCH', `subtasks?id=eq.${s.id}`, { position: s.position });
+      }
+    });
+  });
+}
 
 if (sessionStorage.getItem('auth') === '1') {
   document.getElementById('login-screen').style.display = 'none';
