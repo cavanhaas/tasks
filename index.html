@@ -108,7 +108,7 @@
   .task-item.drag-over-top::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--blue); z-index: 10; }
   .task-item.drag-over-bottom::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--blue); z-index: 10; }
   .task-item.dragging { opacity: 0.4; }
-  .task-drag-handle { position: absolute; left: 0; top: 0; bottom: 0; width: 3.25rem; cursor: grab; z-index: 2; }
+  .task-drag-handle { position: absolute; left: 0; top: 0; bottom: 0; width: 0.75rem; cursor: grab; z-index: 2; }
   .task-drag-handle:active { cursor: grabbing; }
   .task-row { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; margin-left: 3.25rem; position: relative; }
 
@@ -979,8 +979,17 @@ function setupTaskDrag() {
       const insertAt = fromIdx < toIdx ? (insertBefore ? toIdx - 1 : toIdx) : (insertBefore ? toIdx : toIdx + 1);
       boardTasks.splice(Math.max(0, insertAt), 0, moved);
 
-      // Update positions in tasks array and re-render
-      boardTasks.forEach((t, idx) => { t.position = idx; });
+      // Update positions in the main tasks array so renderPaper reflects new order
+      boardTasks.forEach((t, idx) => {
+        t.position = idx;
+        const master = tasks.find(x => x.id === t.id);
+        if (master) master.position = idx;
+      });
+      // Sort main tasks array by position for this board
+      tasks.sort((a, b) => {
+        if (a.board_id === activeBoard && b.board_id === activeBoard) return a.position - b.position;
+        return 0;
+      });
       renderPaper();
 
       // Save to Supabase
@@ -1052,7 +1061,16 @@ function setupSubtaskDrag(taskId) {
       const [moved] = taskSubs.splice(fromIdx, 1);
       const insertAt = fromIdx < toIdx ? (insertBefore ? toIdx - 1 : toIdx) : (insertBefore ? toIdx : toIdx + 1);
       taskSubs.splice(Math.max(0, insertAt), 0, moved);
-      taskSubs.forEach((s, idx) => { s.position = idx; });
+      // Update positions in main subtasks array so re-render reflects new order
+      taskSubs.forEach((s, idx) => {
+        s.position = idx;
+        const master = subtasks.find(x => x.id === s.id);
+        if (master) master.position = idx;
+      });
+      subtasks.sort((a, b) => {
+        if (a.task_id === taskId && b.task_id === taskId) return a.position - b.position;
+        return 0;
+      });
 
       renderSubtasks(taskId, false);
       document.getElementById(`subtasks-${taskId}`)?.classList.add('open');
