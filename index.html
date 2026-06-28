@@ -147,7 +147,7 @@
   .subtask-row.drag-over-top::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--blue); z-index: 10; }
   .subtask-row.drag-over-bottom::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--blue); z-index: 10; }
   .subtask-row.dragging { opacity: 0.4; }
-  .subtask-drag-handle { width: 18px; height: 100%; cursor: grab; flex-shrink: 0; margin-top: 4px; }
+  .subtask-drag-handle { width: 1.5rem; min-height: 1.5rem; cursor: grab; flex-shrink: 0; align-self: stretch; }
   .subtask-drag-handle:active { cursor: grabbing; }
   .subtask-cb { width: 13px; height: 13px; border: 1px solid var(--ink-faint); background: transparent; cursor: pointer; flex-shrink: 0; margin-top: 4px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; border-radius: 50%; }
   .subtask-cb:hover { border-color: var(--ink); }
@@ -939,10 +939,11 @@ function setupTaskDrag() {
     });
 
     item.addEventListener('dragover', e => {
+      // If event came from within subtask area, ignore it
+      if (e.target.closest('.subtasks')) return;
       e.preventDefault();
       const draggingId = e.dataTransfer.getData('taskId');
       if (!draggingId) return;
-      // Only accept task drags, not subtask drags
       if (e.dataTransfer.types.includes('subtaskid')) return;
       document.querySelectorAll('.task-item').forEach(i => i.classList.remove('drag-over-top', 'drag-over-bottom'));
       const rect = item.getBoundingClientRect();
@@ -958,6 +959,7 @@ function setupTaskDrag() {
     });
 
     item.addEventListener('drop', async e => {
+      if (e.target.closest('.subtasks')) return;
       e.preventDefault();
       const draggedId = e.dataTransfer.getData('taskId');
       const droppedOnId = item.id.replace('task-', '');
@@ -1015,8 +1017,9 @@ function setupSubtaskDrag(taskId) {
     handle.addEventListener('mouseup', () => { row.draggable = false; });
 
     row.addEventListener('dragstart', e => {
+      e.stopPropagation();
       e.dataTransfer.setData('subtaskId', sid);
-      e.dataTransfer.setData('subtaskid', sid); // lowercase for type check
+      e.dataTransfer.setData('subtaskid', sid);
       e.dataTransfer.setData('parentTaskId', taskId);
       e.dataTransfer.effectAllowed = 'move';
       setTimeout(() => row.classList.add('dragging'), 0);
