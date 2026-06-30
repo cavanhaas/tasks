@@ -283,7 +283,9 @@
   .journal-editable:empty::before { content: attr(data-placeholder); color: var(--ink-faint); font-style: italic; }
 
   .j-entry { margin-bottom: 1.4em; }
-  .j-entry-header { font-weight: 700; white-space: pre-wrap; }
+  .j-entry-header { white-space: pre-wrap; }
+  .journal-scroll-btn { display: block; margin: 0.5rem auto 1rem; background: none; border: 1px solid var(--line); border-radius: 4px; color: var(--ink-light); font-size: 1.1rem; padding: 0.25rem 1rem; cursor: pointer; transition: all 0.15s; }
+  .journal-scroll-btn:hover { color: var(--ink); border-color: var(--ink-faint); }
   .j-entry-body { font-weight: 400; white-space: pre-wrap; margin-top: 0.3em; }
 
   @media (max-width: 500px) {
@@ -382,6 +384,7 @@
       <div class="journal-page-title">Legacy</div>
       <div style="width:64px"></div>
     </div>
+    <button class="journal-scroll-btn" onclick="document.getElementById('legacy-content').scrollIntoView({block:'end',behavior:'smooth'})" title="Scroll to bottom">↓</button>
     <div class="paper journal-page-paper">
       <div id="legacy-content" class="journal-editable read-only" data-placeholder="Permanent log — nothing here yet."></div>
     </div>
@@ -1234,9 +1237,23 @@ async function ensureJournalLoaded() {
     const wb = document.getElementById('whiteboard-input');
     const jp = document.getElementById('journal-page-content');
     const lg = document.getElementById('legacy-content');
-    if (wb) wb.value = rows[0].whiteboard || '';
+    if (wb) {
+      wb.value = rows[0].whiteboard || '';
+      const savedWbH = localStorage.getItem('wbHeight');
+      if (savedWbH) wb.style.height = savedWbH;
+      const wbObs = new ResizeObserver(() => localStorage.setItem('wbHeight', wb.style.height));
+      wbObs.observe(wb);
+    }
     if (jp) jp.innerHTML = rows[0].journal || '';
     if (lg) lg.innerHTML = rows[0].legacy || '';
+    // Restore journal body height
+    const jb = document.getElementById('journal-body');
+    if (jb) {
+      const savedJbH = localStorage.getItem('jbHeight');
+      if (savedJbH) jb.style.height = savedJbH;
+      const jbObs = new ResizeObserver(() => localStorage.setItem('jbHeight', jb.style.height));
+      jbObs.observe(jb);
+    }
   }
 }
 
@@ -1272,12 +1289,15 @@ async function submitJournalEntry() {
   if (!body.trim() && !title && !loc) { toast('Nothing to save'); return; }
 
   const headerText = `${ts}\t${loc}\t\t${title}`;
-  const entryHtml = `<div class="j-entry"><div class="j-entry-header">${escHtml(headerText)}</div><div class="j-entry-body">${escHtml(body)}</div></div>`;
+  // Use <b> so bold survives paste into Google Docs; convert newlines to <br> for line breaks
+  const bodyHtml = escHtml(body).replace(/\n/g, '<br>');
+  const entryHtml = `<div class="j-entry"><div class="j-entry-header"><b>${escHtml(headerText)}</b></div><div class="j-entry-body">${bodyHtml}</div></div>`;
 
   const journalEl = document.getElementById('journal-page-content');
   const legacyEl = document.getElementById('legacy-content');
-  journalEl.innerHTML = entryHtml + journalEl.innerHTML;
-  legacyEl.innerHTML = entryHtml + legacyEl.innerHTML;
+  // Append to bottom so oldest is at top, newest at bottom
+  journalEl.innerHTML = journalEl.innerHTML + entryHtml;
+  legacyEl.innerHTML = legacyEl.innerHTML + entryHtml;
 
   await api('PATCH', `journal_data?id=eq.${journalRowId}`, { journal: journalEl.innerHTML, legacy: legacyEl.innerHTML });
 
