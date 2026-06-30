@@ -354,8 +354,8 @@
     <div class="paper journal-entry-paper">
       <div class="journal-entry-header-row">
         <span class="j-ts" id="journal-ts"></span>
-        <input class="j-loc" id="journal-location" placeholder="Location" onfocus="this.select()" oninput="onJournalFieldInput()" />
-        <input class="j-title" id="journal-title" placeholder="Title" oninput="onJournalFieldInput()" />
+        <input class="j-loc" id="journal-location" placeholder="Location" onfocus="this.select()" oninput="uppercaseField(this);onJournalFieldInput()" />
+        <input class="j-title" id="journal-title" placeholder="Title" oninput="uppercaseField(this);onJournalFieldInput()" />
       </div>
       <textarea id="journal-body" class="journal-entry-body" placeholder="Write your entry…" oninput="onJournalFieldInput()"></textarea>
       <div class="journal-entry-actions">
@@ -1217,6 +1217,13 @@ function onJournalFieldInput() {
     const el = document.getElementById('journal-ts');
     if (el) el.textContent = journalFrozenTs;
   }
+}
+
+function uppercaseField(el) {
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  el.value = el.value.toUpperCase();
+  el.setSelectionRange(start, end);
 }
 
 async function ensureJournalLoaded() {
