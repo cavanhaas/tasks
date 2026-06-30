@@ -1293,7 +1293,7 @@ async function submitJournalEntry() {
 
   const headerText = `${ts}\t${loc}\t\t${title}`;
   // Use <b> so bold survives paste into Google Docs; convert newlines to <br> for line breaks
-  const bodyHtml = escHtml(body).replace(/\n/g, '<br>');
+  const bodyHtml = '<br>' + escHtml(body).replace(/\n/g, '<br>');
   const entryHtml = `<div class="j-entry"><div class="j-entry-header"><b>${escHtml(headerText)}</b></div><div class="j-entry-body">${bodyHtml}</div><br></div>`;
 
   const journalEl = document.getElementById('journal-page-content');
