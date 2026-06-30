@@ -94,6 +94,7 @@
 
   .paper { background: var(--paper); border: 1px solid var(--line); box-shadow: var(--shadow); padding: 1.5rem 1.5rem 2rem; position: relative; }
   .paper::before { content: ''; position: absolute; left: 3.25rem; top: 0; bottom: 0; width: 1px; background: var(--margin-line); opacity: 0.5; }
+  .journal-entry-paper::before, .journal-page-paper::before { display: none; }
 
   .add-task-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.5rem 0.65rem 0; border-bottom: 1px solid var(--line); margin-left: 3.25rem; transition: background 0.15s, border-color 0.15s; border-radius: 6px; }
   .add-task-row.unsaved { background: var(--unsaved); border-bottom-color: var(--unsaved-border); padding-left: 0.5rem; margin-left: 2.75rem; }
@@ -244,6 +245,51 @@
     .subtasks { margin-left: 1rem; }
     .today-item.is-subtask { margin-left: 1rem; }
   }
+
+  /* JOURNAL */
+  .topbar-left { display: flex; align-items: center; gap: 0.6rem; }
+  .journal-icon-btn { background: none; border: none; cursor: pointer; color: var(--ink-light); padding: 2px; display: flex; align-items: center; transition: color 0.15s; }
+  .journal-icon-btn:hover { color: var(--ink); }
+  .journal-icon-btn.active { color: var(--blue); }
+  .journal-icon-btn svg { width: 20px; height: 20px; }
+
+  #journal-view, #journal-page-view, #legacy-view { display: none; }
+
+  .journal-whiteboard-wrap { margin-bottom: 1.5rem; }
+  .journal-whiteboard { width: 100%; height: 25vh; min-height: 160px; resize: vertical; background: var(--paper); border: 1px solid var(--line); box-shadow: var(--shadow); padding: 1rem 1.25rem; font-family: 'DM Sans', sans-serif; font-size: 1rem; color: var(--ink); outline: none; }
+  .journal-whiteboard::placeholder { color: var(--ink-faint); font-style: italic; }
+
+  .journal-entry-paper { padding: 1.5rem; }
+  .journal-entry-header-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 0.75rem; margin-bottom: 0.75rem; }
+  .j-ts { font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 11pt; color: var(--ink); white-space: nowrap; }
+  .j-loc, .j-title { font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 11pt; color: var(--ink); border: none; background: transparent; outline: none; flex: 1; min-width: 110px; }
+  .j-loc::placeholder, .j-title::placeholder { color: var(--ink-faint); font-weight: 400; }
+  .journal-entry-body { width: 100%; min-height: 220px; border: none; background: transparent; outline: none; resize: vertical; font-family: 'DM Sans', sans-serif; font-weight: 400; font-size: 11pt; color: var(--ink); line-height: 1.6; }
+  .journal-entry-body::placeholder { color: var(--ink-faint); font-style: italic; }
+  .journal-entry-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+  .journal-btn { font-family: 'DM Sans', sans-serif; font-size: 0.92rem; padding: 0.5rem 1.2rem; border: 1px solid var(--ink); border-radius: 4px; background: var(--ink); color: var(--paper); cursor: pointer; transition: all 0.15s; }
+  .journal-btn:hover { opacity: 0.85; }
+  .journal-btn.secondary { background: transparent; color: var(--ink); border-color: var(--ink-faint); }
+  .journal-btn.secondary:hover { background: var(--bg); }
+
+  .journal-page-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+  .journal-page-title { font-family: 'Syne', sans-serif; font-size: 1.15rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); }
+  .journal-back-btn, .journal-legacy-btn { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--ink-light); background: none; border: 1px solid var(--line); border-radius: 4px; padding: 0.35rem 0.75rem; cursor: pointer; transition: all 0.15s; }
+  .journal-back-btn:hover, .journal-legacy-btn:hover { color: var(--ink); border-color: var(--ink-faint); }
+
+  .journal-page-paper { padding: 1.5rem; min-height: 300px; }
+  .journal-editable { font-family: 'DM Sans', sans-serif; font-size: 11pt; color: var(--ink); line-height: 1.6; outline: none; white-space: pre-wrap; }
+  .journal-editable.read-only { cursor: default; }
+  .journal-editable:empty::before { content: attr(data-placeholder); color: var(--ink-faint); font-style: italic; }
+
+  .j-entry { margin-bottom: 1.4em; }
+  .j-entry-header { font-weight: 700; white-space: pre-wrap; }
+  .j-entry-body { font-weight: 400; white-space: pre-wrap; margin-top: 0.3em; }
+
+  @media (max-width: 500px) {
+    .journal-entry-header-row { flex-direction: column; align-items: flex-start; }
+    .j-loc, .j-title { width: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -260,7 +306,12 @@
 
 <div id="app">
   <div class="topbar">
-    <h1>Tasks</h1>
+    <div class="topbar-left">
+      <h1>Tasks</h1>
+      <button class="journal-icon-btn" id="journal-icon-btn" onclick="showView('journal')" title="Journal" aria-label="Open journal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="11" y1="8" x2="17" y2="8"/><line x1="11" y1="12" x2="17" y2="12"/><line x1="11" y1="16" x2="15" y2="16"/></svg>
+      </button>
+    </div>
     <div class="topbar-right">
       <button class="top-btn today-btn" id="btn-today" onclick="showView('today')">Do Today</button>
       <button class="top-btn active" id="btn-tasks" onclick="showView('tasks')">Lists</button>
@@ -294,6 +345,46 @@
 
   <div id="trash-view">
     <div class="paper" id="trash-content"></div>
+  </div>
+
+  <div id="journal-view">
+    <div class="journal-whiteboard-wrap">
+      <textarea id="whiteboard-input" class="journal-whiteboard" placeholder="Scratchpad — jot anything here…" oninput="onWhiteboardInput()"></textarea>
+    </div>
+    <div class="paper journal-entry-paper">
+      <div class="journal-entry-header-row">
+        <span class="j-ts" id="journal-ts"></span>
+        <input class="j-loc" id="journal-location" placeholder="Location" onfocus="this.select()" oninput="onJournalFieldInput()" />
+        <input class="j-title" id="journal-title" placeholder="Title" oninput="onJournalFieldInput()" />
+      </div>
+      <textarea id="journal-body" class="journal-entry-body" placeholder="Write your entry…" oninput="onJournalFieldInput()"></textarea>
+      <div class="journal-entry-actions">
+        <button class="journal-btn secondary" onclick="showView('journalpage')">Journal</button>
+        <button class="journal-btn" onclick="submitJournalEntry()">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="journal-page-view">
+    <div class="journal-page-topbar">
+      <button class="journal-back-btn" onclick="showView('journal')">← Back</button>
+      <div class="journal-page-title">Journal</div>
+      <button class="journal-legacy-btn" onclick="showView('legacy')">Legacy</button>
+    </div>
+    <div class="paper journal-page-paper">
+      <div id="journal-page-content" class="journal-editable" contenteditable="true" oninput="onJournalPageEdit()" data-placeholder="Entries will appear here…"></div>
+    </div>
+  </div>
+
+  <div id="legacy-view">
+    <div class="journal-page-topbar">
+      <button class="journal-back-btn" onclick="showView('journalpage')">← Back</button>
+      <div class="journal-page-title">Legacy</div>
+      <div style="width:64px"></div>
+    </div>
+    <div class="paper journal-page-paper">
+      <div id="legacy-content" class="journal-editable read-only" data-placeholder="Permanent log — nothing here yet."></div>
+    </div>
   </div>
 </div>
 
@@ -346,7 +437,13 @@ let boards = [], tasks = [], subtasks = [];
 let activeBoard = null, currentView = 'tasks', histFilter = 'week';
 let modalCallback = null, modalIsConfirm = false;
 
-async function init() { await loadAll(); renderBoardTabs(); renderPaper(); }
+async function init() {
+  await loadAll();
+  renderBoardTabs();
+  renderPaper();
+  const savedView = localStorage.getItem('lastView');
+  if (savedView && VIEW_IDS[savedView]) showView(savedView);
+}
 
 async function loadAll() {
   [boards, tasks, subtasks] = await Promise.all([
@@ -360,16 +457,25 @@ async function loadAll() {
   }
 }
 
+const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view' };
+
 function showView(v) {
   currentView = v;
-  document.getElementById('today-view').style.display = v === 'today' ? 'block' : 'none';
-  document.getElementById('tasks-view').style.display = v === 'tasks' ? 'block' : 'none';
-  document.getElementById('history-view').style.display = v === 'history' ? 'block' : 'none';
-  document.getElementById('trash-view').style.display = v === 'trash' ? 'block' : 'none';
-  ['today','tasks','history','trash'].forEach(x => document.getElementById(`btn-${x}`).classList.toggle('active', x === v));
+  localStorage.setItem('lastView', v);
+  Object.entries(VIEW_IDS).forEach(([name, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (v === name) ? 'block' : 'none';
+  });
+  ['today','tasks','history','trash'].forEach(x => document.getElementById(`btn-${x}`)?.classList.toggle('active', x === v));
+  const jBtn = document.getElementById('journal-icon-btn');
+  if (jBtn) jBtn.classList.toggle('active', v === 'journal' || v === 'journalpage' || v === 'legacy');
+
   if (v === 'today') renderToday();
   if (v === 'history') renderHistory();
   if (v === 'trash') renderTrash();
+  if (v === 'journal') ensureJournalLoaded().then(refreshJournalTimestampIfUnfrozen);
+  if (v === 'journalpage') ensureJournalLoaded();
+  if (v === 'legacy') ensureJournalLoaded();
 }
 
 let dragSrcIndex = null;
@@ -1078,6 +1184,102 @@ function setupSubtaskDrag(taskId) {
       }
     });
   });
+}
+
+
+// JOURNAL
+let journalRowId = null;
+let journalFrozenTs = null;
+let whiteboardSaveTimer = null;
+let journalPageSaveTimer = null;
+
+function formatJournalTimestamp(d) {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(-2);
+  let h = d.getHours();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12; if (h === 0) h = 12;
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${mm}.${dd}.${yy} ${h}:${min} ${ampm}`;
+}
+
+function refreshJournalTimestampIfUnfrozen() {
+  if (!journalFrozenTs) {
+    const el = document.getElementById('journal-ts');
+    if (el) el.textContent = formatJournalTimestamp(new Date());
+  }
+}
+
+function onJournalFieldInput() {
+  if (!journalFrozenTs) {
+    journalFrozenTs = formatJournalTimestamp(new Date());
+    const el = document.getElementById('journal-ts');
+    if (el) el.textContent = journalFrozenTs;
+  }
+}
+
+async function ensureJournalLoaded() {
+  if (journalRowId) return;
+  const rows = await api('GET', 'journal_data?select=*&limit=1');
+  if (rows && rows[0]) {
+    journalRowId = rows[0].id;
+    const wb = document.getElementById('whiteboard-input');
+    const jp = document.getElementById('journal-page-content');
+    const lg = document.getElementById('legacy-content');
+    if (wb) wb.value = rows[0].whiteboard || '';
+    if (jp) jp.innerHTML = rows[0].journal || '';
+    if (lg) lg.innerHTML = rows[0].legacy || '';
+  }
+}
+
+function onWhiteboardInput() {
+  clearTimeout(whiteboardSaveTimer);
+  whiteboardSaveTimer = setTimeout(saveWhiteboard, 800);
+}
+
+async function saveWhiteboard() {
+  if (!journalRowId) return;
+  const val = document.getElementById('whiteboard-input').value;
+  await api('PATCH', `journal_data?id=eq.${journalRowId}`, { whiteboard: val });
+}
+
+function onJournalPageEdit() {
+  clearTimeout(journalPageSaveTimer);
+  journalPageSaveTimer = setTimeout(saveJournalPage, 800);
+}
+
+async function saveJournalPage() {
+  if (!journalRowId) return;
+  const html = document.getElementById('journal-page-content').innerHTML;
+  await api('PATCH', `journal_data?id=eq.${journalRowId}`, { journal: html });
+}
+
+async function submitJournalEntry() {
+  await ensureJournalLoaded();
+  const ts = journalFrozenTs || formatJournalTimestamp(new Date());
+  const loc = document.getElementById('journal-location').value.trim();
+  const title = document.getElementById('journal-title').value.trim();
+  const body = document.getElementById('journal-body').value;
+
+  if (!body.trim() && !title && !loc) { toast('Nothing to save'); return; }
+
+  const headerText = `${ts}\t${loc}\t\t${title}`;
+  const entryHtml = `<div class="j-entry"><div class="j-entry-header">${escHtml(headerText)}</div><div class="j-entry-body">${escHtml(body)}</div></div>`;
+
+  const journalEl = document.getElementById('journal-page-content');
+  const legacyEl = document.getElementById('legacy-content');
+  journalEl.innerHTML = entryHtml + journalEl.innerHTML;
+  legacyEl.innerHTML = entryHtml + legacyEl.innerHTML;
+
+  await api('PATCH', `journal_data?id=eq.${journalRowId}`, { journal: journalEl.innerHTML, legacy: legacyEl.innerHTML });
+
+  document.getElementById('journal-location').value = '';
+  document.getElementById('journal-title').value = '';
+  document.getElementById('journal-body').value = '';
+  journalFrozenTs = null;
+  refreshJournalTimestampIfUnfrozen();
+  toast('Entry saved to Journal');
 }
 
 if (sessionStorage.getItem('auth') === '1') {
