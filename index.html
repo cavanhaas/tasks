@@ -286,6 +286,8 @@
   .j-entry-header { white-space: pre-wrap; }
   .journal-scroll-btn { display: block; margin: 0.5rem auto 1rem; background: none; border: 1px solid var(--line); border-radius: 4px; color: var(--ink-light); font-size: 1.1rem; padding: 0.25rem 1rem; cursor: pointer; transition: all 0.15s; }
   .journal-scroll-btn:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .delete-legacy-btn { display: block; margin: 1.5rem auto 0; background: none; border: 1px solid var(--red); border-radius: 4px; color: var(--red); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; padding: 0.4rem 1rem; cursor: pointer; opacity: 0.6; transition: all 0.15s; }
+  .delete-legacy-btn:hover { opacity: 1; background: var(--red); color: var(--paper); }
   .j-entry-body { font-weight: 400; white-space: pre-wrap; margin-top: 0.3em; }
 
   @media (max-width: 500px) {
@@ -388,6 +390,7 @@
     <div class="paper journal-page-paper">
       <div id="legacy-content" class="journal-editable read-only" data-placeholder="Permanent log — nothing here yet."></div>
     </div>
+    <button class="delete-legacy-btn" onclick="deleteLegacy()">Delete Legacy</button>
   </div>
 </div>
 
@@ -1291,7 +1294,7 @@ async function submitJournalEntry() {
   const headerText = `${ts}\t${loc}\t\t${title}`;
   // Use <b> so bold survives paste into Google Docs; convert newlines to <br> for line breaks
   const bodyHtml = escHtml(body).replace(/\n/g, '<br>');
-  const entryHtml = `<div class="j-entry"><div class="j-entry-header"><b>${escHtml(headerText)}</b></div><div class="j-entry-body">${bodyHtml}</div></div>`;
+  const entryHtml = `<div class="j-entry"><div class="j-entry-header"><b>${escHtml(headerText)}</b></div><div class="j-entry-body">${bodyHtml}</div><br></div>`;
 
   const journalEl = document.getElementById('journal-page-content');
   const legacyEl = document.getElementById('legacy-content');
@@ -1307,6 +1310,16 @@ async function submitJournalEntry() {
   journalFrozenTs = null;
   refreshJournalTimestampIfUnfrozen();
   toast('Entry saved to Journal');
+}
+
+async function deleteLegacy() {
+  const confirmed = window.confirm('Are you sure? This will permanently delete the entire Legacy log and cannot be undone.');
+  if (!confirmed) return;
+  await ensureJournalLoaded();
+  const el = document.getElementById('legacy-content');
+  el.innerHTML = '';
+  await api('PATCH', `journal_data?id=eq.${journalRowId}`, { legacy: '' });
+  toast('Legacy deleted');
 }
 
 if (sessionStorage.getItem('auth') === '1') {
