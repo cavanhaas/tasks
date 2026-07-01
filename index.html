@@ -301,8 +301,9 @@
 <div id="login-screen">
   <div class="login-card">
     <h1>Tasks</h1>
-    <p>Enter your password to continue</p>
-    <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')tryLogin()" />
+    <p>Sign in to continue</p>
+    <input type="email" id="email-input" placeholder="Email" onkeydown="if(event.key==='Enter')document.getElementById('pw-input').focus()" autocomplete="email" />
+    <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')tryLogin()" autocomplete="current-password" />
     <button onclick="tryLogin()">Enter</button>
     <div class="login-error" id="login-error"></div>
   </div>
@@ -410,31 +411,99 @@
 <script>
 const SUPABASE_URL = 'https://ntyvgkpvmgmuinzxoczt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eXZna3B2bWdtdWluenhvY3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MjkxNDUsImV4cCI6MjA5ODAwNTE0NX0.nvmabXRJYfweyGpFFqDeWHKmcWq4AmthgWjZNdVdFao';
-const PASSWORD = 'ww';
+// AUTH SESSION
+let _accessToken = null;
 
-const H = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
+function getH() {
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${_accessToken || SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+}
 
 async function api(method, path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { method, headers: H, body: body ? JSON.stringify(body) : undefined });
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method, headers: getH(),
+    body: body ? JSON.stringify(body) : undefined
+  });
   if (method === 'DELETE' || res.status === 204) return null;
   const text = await res.text();
   if (!res.ok) throw new Error(text);
   return text ? JSON.parse(text) : null;
 }
 
+async function supabaseSignIn(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.msg || 'Login failed');
+  return data;
+}
+
+async function supabaseRefresh(refreshToken) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token: refreshToken })
+  });
+  const data = await res.json();
+  if (!res.ok) return null;
+  return data;
+}
+
+function saveSession(data) {
+  _accessToken = data.access_token;
+  localStorage.setItem('sb_access', data.access_token);
+  localStorage.setItem('sb_refresh', data.refresh_token);
+  localStorage.setItem('sb_expires', Date.now() + (data.expires_in * 1000));
+}
+
+function clearSession() {
+  _accessToken = null;
+  localStorage.removeItem('sb_access');
+  localStorage.removeItem('sb_refresh');
+  localStorage.removeItem('sb_expires');
+}
+
+async function loadSession() {
+  const access = localStorage.getItem('sb_access');
+  const refresh = localStorage.getItem('sb_refresh');
+  const expires = parseInt(localStorage.getItem('sb_expires') || '0');
+  if (!access || !refresh) return false;
+  // If token expires within 5 min, refresh it
+  if (Date.now() > expires - 5 * 60 * 1000) {
+    const data = await supabaseRefresh(refresh);
+    if (!data) { clearSession(); return false; }
+    saveSession(data);
+  } else {
+    _accessToken = access;
+  }
+  return true;
+}
+
 function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); document.getElementById('theme-btn').textContent = t === 'dark' ? 'Light' : 'Dark'; localStorage.setItem('theme', t); }
 function toggleTheme() { applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
 applyTheme(localStorage.getItem('theme') || 'light');
 
-function tryLogin() {
-  const val = document.getElementById('pw-input').value;
-  if (val === PASSWORD) {
-    sessionStorage.setItem('auth', '1');
+async function tryLogin() {
+  const email = document.getElementById('email-input').value.trim();
+  const password = document.getElementById('pw-input').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Enter your email and password.'; return; }
+  try {
+    const data = await supabaseSignIn(email, password);
+    saveSession(data);
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     init();
-  } else {
-    document.getElementById('login-error').textContent = 'Incorrect password.';
+  } catch (e) {
+    errEl.textContent = 'Incorrect email or password.';
     document.getElementById('pw-input').value = '';
   }
 }
@@ -1322,11 +1391,13 @@ async function deleteLegacy() {
   toast('Legacy deleted');
 }
 
-if (sessionStorage.getItem('auth') === '1') {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  init();
-}
+loadSession().then(ok => {
+  if (ok) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    init();
+  }
+});
 </script>
 </body>
 </html>
