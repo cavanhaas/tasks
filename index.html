@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -73,8 +73,35 @@
   .top-btn.active { color: var(--ink); border-bottom: 1px solid var(--ink); }
   .top-btn.today-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
 
-  .theme-toggle { background: none; border: 1px solid var(--line); border-radius: 4px; color: var(--ink-light); cursor: pointer; font-size: 0.85rem; padding: 0.25rem 0.6rem; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
-  .theme-toggle:hover { color: var(--ink); border-color: var(--ink-faint); }
+  /* TIME LOGGER */
+  .clock-icon-btn { background: none; border: none; cursor: pointer; color: var(--ink-light); padding: 2px; display: flex; align-items: center; transition: color 0.15s; }
+  .clock-icon-btn:hover { color: var(--ink); }
+  .clock-icon-btn.active { color: var(--blue); }
+  .clock-icon-btn svg { width: 20px; height: 20px; }
+  #timelog-view, #timelog-legacy-view { display: none; }
+  .tl-paper { padding: 1.5rem; }
+  .tl-inputs { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
+  .tl-input { width: 100%; border: none; border-bottom: 1.5px solid var(--ink-faint); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 1rem; padding: 0.4rem 0; color: var(--ink); outline: none; transition: border-color 0.15s; }
+  .tl-input:focus { border-color: var(--ink); }
+  .tl-input::placeholder { color: var(--ink-faint); }
+  .tl-btns { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 1.25rem; }
+  .tl-btn { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; padding: 0.55rem 0.5rem; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink-light); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; }
+  .tl-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .tl-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .tl-btn.danger.active { background: var(--red); color: #fff; border-color: var(--red); }
+  .tl-counters { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 1.25rem; }
+  .tl-counter { background: var(--bg); border-radius: 4px; padding: 10px 12px; }
+  .tl-counter-label { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; color: var(--ink-faint); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 2px; }
+  .tl-counter-val { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 500; color: var(--ink); }
+  .tl-row-wrap { border-top: 1px solid var(--line); padding-top: 1rem; }
+  .tl-row-label { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; color: var(--ink-faint); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 6px; }
+  .tl-row-box { display: flex; gap: 8px; align-items: stretch; }
+  .tl-row-text { flex: 1; font-family: monospace; font-size: 0.78rem; background: var(--bg); border-radius: 4px; padding: 10px 12px; overflow-x: auto; white-space: nowrap; color: var(--ink-faint); }
+  .tl-row-actions { display: flex; gap: 6px; margin-top: 0.75rem; justify-content: flex-end; }
+  .tl-status { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 1rem; text-align: right; }
+  .tl-log-item { padding: 0.6rem 0; border-bottom: 1px solid var(--line); }
+  .tl-log-row { font-family: monospace; font-size: 0.78rem; color: var(--ink-light); overflow-x: auto; white-space: nowrap; }
+  .tl-log-meta { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; color: var(--ink-faint); margin-top: 2px; }
 
   .board-tabs { display: flex; gap: 0; margin-bottom: 1.75rem; border-bottom: 1px solid var(--line); overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; user-select: none; }
   .board-tabs::-webkit-scrollbar { display: none; }
@@ -312,9 +339,12 @@
 <div id="app">
   <div class="topbar">
     <div class="topbar-left">
-      <h1>Tasks</h1>
+      <h1>C.F.H.</h1>
       <button class="journal-icon-btn" id="journal-icon-btn" onclick="showView('journal')" title="Journal" aria-label="Open journal">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="11" y1="8" x2="17" y2="8"/><line x1="11" y1="12" x2="17" y2="12"/><line x1="11" y1="16" x2="15" y2="16"/></svg>
+      </button>
+      <button class="clock-icon-btn" id="clock-icon-btn" onclick="showView('timelog')" title="Time Logger" aria-label="Open time logger">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 12"/></svg>
       </button>
     </div>
     <div class="topbar-right">
@@ -322,7 +352,6 @@
       <button class="top-btn active" id="btn-tasks" onclick="showView('tasks')">Lists</button>
       <button class="top-btn" id="btn-history" onclick="showView('history')">Done</button>
       <button class="top-btn" id="btn-trash" onclick="showView('trash')">Bin</button>
-      <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">Dark</button>
     </div>
   </div>
 
@@ -392,6 +421,55 @@
       <div id="legacy-content" class="journal-editable read-only" data-placeholder="Permanent log — nothing here yet."></div>
     </div>
     <button class="delete-legacy-btn" onclick="deleteLegacy()">Delete Legacy</button>
+  </div>
+
+  <div id="timelog-view">
+    <div class="paper tl-paper">
+      <div class="tl-inputs">
+        <input class="tl-input" id="tl-cat" placeholder="Category (e.g. Safety Training)" />
+        <input class="tl-input" id="tl-note" placeholder="Notes (optional)" />
+      </div>
+      <div id="tl-status" class="tl-status">Idle</div>
+      <div class="tl-btns">
+        <button class="tl-btn" id="tl-btnIn" onclick="tlClockIn()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Clock in
+        </button>
+        <button class="tl-btn" id="tl-btnBreak" onclick="tlBreak()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Break
+        </button>
+        <button class="tl-btn" id="tl-btnOut" onclick="tlClockOut()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Clock out
+        </button>
+      </div>
+      <div class="tl-counters">
+        <div class="tl-counter"><div class="tl-counter-label">Elapsed</div><div class="tl-counter-val" id="tl-elapsed">0:00</div></div>
+        <div class="tl-counter"><div class="tl-counter-label">Break</div><div class="tl-counter-val" id="tl-break">0:00</div></div>
+        <div class="tl-counter"><div class="tl-counter-label">Billable</div><div class="tl-counter-val" id="tl-bill">0:00</div></div>
+      </div>
+      <div class="tl-row-wrap">
+        <div class="tl-row-label">Paste-ready row</div>
+        <div class="tl-row-box">
+          <div class="tl-row-text" id="tl-row">Row appears here after clock out</div>
+        </div>
+        <div class="tl-row-actions">
+          <button class="task-action-btn" onclick="tlCopy()">Copy</button>
+          <button class="task-action-btn" onclick="tlSaveToLegacy()">Save to Legacy</button>
+          <button class="task-action-btn" onclick="showView('timelog-legacy')">Legacy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="timelog-legacy-view">
+    <div class="journal-page-topbar">
+      <button class="journal-back-btn" onclick="showView('timelog')">← Back</button>
+      <div class="journal-page-title">Time Log Legacy</div>
+      <div style="width:64px"></div>
+    </div>
+    <div class="paper tl-paper">
+      <div id="tl-legacy-content"></div>
+      <button class="delete-legacy-btn" onclick="tlDeleteAll()">Delete All</button>
+    </div>
   </div>
 </div>
 
@@ -486,9 +564,7 @@ async function loadSession() {
   return true;
 }
 
-function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); document.getElementById('theme-btn').textContent = t === 'dark' ? 'Light' : 'Dark'; localStorage.setItem('theme', t); }
-function toggleTheme() { applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
-applyTheme(localStorage.getItem('theme') || 'light');
+// Dark mode is permanent
 
 async function tryLogin() {
   const email = document.getElementById('email-input').value.trim();
@@ -532,7 +608,7 @@ async function loadAll() {
   }
 }
 
-const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view' };
+const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view', timelog: 'timelog-view', 'timelog-legacy': 'timelog-legacy-view' };
 
 function showView(v) {
   currentView = v;
@@ -544,6 +620,8 @@ function showView(v) {
   ['today','tasks','history','trash'].forEach(x => document.getElementById(`btn-${x}`)?.classList.toggle('active', x === v));
   const jBtn = document.getElementById('journal-icon-btn');
   if (jBtn) jBtn.classList.toggle('active', v === 'journal' || v === 'journalpage' || v === 'legacy');
+  const cBtn = document.getElementById('clock-icon-btn');
+  if (cBtn) cBtn.classList.toggle('active', v === 'timelog' || v === 'timelog-legacy');
 
   if (v === 'today') renderToday();
   if (v === 'history') renderHistory();
@@ -551,6 +629,7 @@ function showView(v) {
   if (v === 'journal') ensureJournalLoaded().then(refreshJournalTimestampIfUnfrozen);
   if (v === 'journalpage') ensureJournalLoaded();
   if (v === 'legacy') ensureJournalLoaded();
+  if (v === 'timelog-legacy') renderTlLegacy();
 }
 
 let dragSrcIndex = null;
@@ -1389,6 +1468,111 @@ async function deleteLegacy() {
   el.innerHTML = '';
   await api('PATCH', `journal_data?id=eq.${journalRowId}`, { legacy: '' });
   toast('Legacy deleted');
+}
+
+
+// TIME LOGGER
+let tlInT = null, tlOutT = null, tlBreakStart = null, tlBreakMs = 0, tlOnBreak = false, tlTick = null;
+
+function tlPad(n) { return String(n).padStart(2,'0'); }
+function tlFmtShort(ms) { let s=Math.round(ms/1000); let h=Math.floor(s/3600); s%=3600; let m=Math.floor(s/60); return h+':'+tlPad(m); }
+function tlFmtDur(ms) { let s=Math.round(ms/1000); let h=Math.floor(s/3600); s%=3600; let m=Math.floor(s/60); s%=60; return h+':'+tlPad(m)+':'+tlPad(s); }
+function tlFmtTime(d) { let h=d.getHours(); let m=d.getMinutes(); let s=d.getSeconds(); let ap=h>=12?'PM':'AM'; h=h%12||12; return h+':'+tlPad(m)+':'+tlPad(s)+' '+ap; }
+function tlFmtDate(d) { return (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2); }
+
+function tlRefresh() {
+  if (!tlInT) return;
+  const end = tlOutT || new Date();
+  const curBreak = tlBreakMs + (tlOnBreak ? (Date.now() - tlBreakStart) : 0);
+  const total = end - tlInT;
+  document.getElementById('tl-elapsed').textContent = tlFmtShort(total);
+  document.getElementById('tl-break').textContent = tlFmtShort(curBreak);
+  document.getElementById('tl-bill').textContent = tlFmtShort(Math.max(0, total - curBreak));
+}
+
+function tlClockIn() {
+  tlInT = new Date(); tlOutT = null; tlBreakMs = 0; tlOnBreak = false; tlBreakStart = null;
+  document.getElementById('tl-status').textContent = 'Clocked in';
+  document.getElementById('tl-row').textContent = 'Row appears here after clock out';
+  document.getElementById('tl-row').style.color = 'var(--ink-faint)';
+  document.getElementById('tl-btnIn').classList.add('active');
+  document.getElementById('tl-btnBreak').classList.remove('active');
+  document.getElementById('tl-btnOut').classList.remove('active');
+  if (tlTick) clearInterval(tlTick);
+  tlTick = setInterval(tlRefresh, 1000);
+  tlRefresh();
+}
+
+function tlBreak() {
+  if (!tlInT || tlOutT) return;
+  if (!tlOnBreak) {
+    tlOnBreak = true; tlBreakStart = Date.now();
+    document.getElementById('tl-status').textContent = 'On break';
+    document.getElementById('tl-btnBreak').classList.add('active');
+  } else {
+    tlOnBreak = false; tlBreakMs += Date.now() - tlBreakStart;
+    document.getElementById('tl-status').textContent = 'Clocked in';
+    document.getElementById('tl-btnBreak').classList.remove('active');
+  }
+  tlRefresh();
+}
+
+function tlClockOut() {
+  if (!tlInT) return;
+  if (tlOnBreak) { tlOnBreak = false; tlBreakMs += Date.now() - tlBreakStart; }
+  tlOutT = new Date();
+  document.getElementById('tl-status').textContent = 'Clocked out';
+  document.getElementById('tl-btnIn').classList.remove('active');
+  document.getElementById('tl-btnBreak').classList.remove('active');
+  document.getElementById('tl-btnOut').classList.add('danger','active');
+  if (tlTick) clearInterval(tlTick);
+  tlRefresh();
+  const total = tlOutT - tlInT;
+  const bill = Math.max(0, total - tlBreakMs);
+  const cat = document.getElementById('tl-cat').value || '';
+  const note = document.getElementById('tl-note').value || '';
+  const row = tlFmtDate(tlInT)+' '+tlFmtTime(tlInT)+'	'+tlFmtDate(tlOutT)+' '+tlFmtTime(tlOutT)+'	'+tlFmtDur(bill)+'	'+tlFmtDur(tlBreakMs)+'	'+tlFmtDur(total)+'	'+cat+'	'+note+'	';
+  const rowEl = document.getElementById('tl-row');
+  rowEl.textContent = row;
+  rowEl.style.color = 'var(--ink-light)';
+}
+
+function tlCopy() {
+  const t = document.getElementById('tl-row').textContent;
+  if (t.startsWith('Row appears')) return;
+  navigator.clipboard && navigator.clipboard.writeText(t);
+  toast('Copied to clipboard');
+}
+
+async function tlSaveToLegacy() {
+  const t = document.getElementById('tl-row').textContent;
+  if (t.startsWith('Row appears')) { toast('Clock out first'); return; }
+  const cat = document.getElementById('tl-cat').value || '';
+  await api('POST', 'time_logs', { row_text: t });
+  toast('Saved to Legacy');
+}
+
+async function renderTlLegacy() {
+  const el = document.getElementById('tl-legacy-content');
+  el.innerHTML = '<p class="empty" style="margin-left:0">Loading…</p>';
+  const rows = await api('GET', 'time_logs?order=created_at.desc');
+  if (!rows || !rows.length) { el.innerHTML = '<p class="empty" style="margin-left:0">No entries yet.</p>'; return; }
+  el.innerHTML = rows.map(r => {
+    const d = new Date(r.created_at);
+    const label = d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' at ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    return `<div class="tl-log-item">
+      <div class="tl-log-row">${escHtml(r.row_text)}</div>
+      <div class="tl-log-meta">Saved ${label}</div>
+    </div>`;
+  }).join('');
+}
+
+async function tlDeleteAll() {
+  const confirmed = window.confirm('Delete all time log entries? This cannot be undone.');
+  if (!confirmed) return;
+  await api('DELETE', 'time_logs?id=neq.00000000-0000-0000-0000-000000000000');
+  renderTlLegacy();
+  toast('All entries deleted');
 }
 
 loadSession().then(ok => {
