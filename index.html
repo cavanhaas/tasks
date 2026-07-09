@@ -524,9 +524,22 @@
     </div>
     <div class="habits-topline">
       <button class="task-action-btn" onclick="openHabitModal()">+ Habit</button>
+      <button class="task-action-btn" onclick="showView('habits-manage')">Manage</button>
       <button class="task-action-btn" onclick="showView('habits-legacy')">Legacy</button>
     </div>
     <div class="paper tl-paper" id="habits-content"></div>
+  </div>
+
+  <div id="habits-manage-view" style="display:none">
+    <div class="journal-page-topbar">
+      <button class="journal-back-btn" onclick="showView('habits')">← Back</button>
+      <div class="journal-page-title">Manage Habits</div>
+      <div style="width:64px"></div>
+    </div>
+    <div class="journal-page-topbar" style="justify-content:flex-end;gap:0.6rem;margin-top:-0.75rem;">
+      <button class="task-action-btn" onclick="copyHabitNames()">Copy names for sheet</button>
+    </div>
+    <div class="paper tl-paper" id="habits-manage-content"></div>
   </div>
 
   <div id="habits-legacy-view">
@@ -673,6 +686,28 @@ function failModalCopy() {
   toast('Copied');
 }
 
+let _refreshing = null;
+async function tryRefreshToken() {
+  if (_refreshing) return _refreshing; // avoid parallel refreshes
+  _refreshing = (async () => {
+    const refresh = localStorage.getItem('sb_refresh');
+    if (!refresh) return false;
+    const data = await supabaseRefresh(refresh);
+    if (!data) return false;
+    saveSession(data);
+    return true;
+  })();
+  const result = await _refreshing;
+  _refreshing = null;
+  return result;
+}
+
+// Background refresh so the token never silently lapses while the app sits open
+setInterval(() => {
+  const expires = parseInt(localStorage.getItem('sb_expires') || '0');
+  if (_accessToken && expires && Date.now() > expires - 10 * 60 * 1000) tryRefreshToken();
+}, 5 * 60 * 1000);
+
 function forceLogout() {
   clearSession();
   document.getElementById('app').style.display = 'none';
@@ -695,13 +730,22 @@ async function api(method, path, body) {
     }
     throw networkErr;
   }
-  // Auth failure — token expired/invalid
+  // Auth failure — try a token refresh and retry once before giving up
   if (res.status === 401) {
-    if (method !== 'GET') {
-      showFailModal(`${method} ${path} failed — session expired. Your change was NOT saved. Copy your content, then sign back in.`, extractTypedContent(body));
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        method, headers: getH(),
+        body: body ? JSON.stringify(body) : undefined
+      });
     }
-    forceLogout();
-    throw new Error('Auth expired');
+    if (res.status === 401) {
+      if (method !== 'GET') {
+        showFailModal(`${method} ${path} failed — session expired. Your change was NOT saved. Copy your content, then sign back in.`, extractTypedContent(body));
+      }
+      forceLogout();
+      throw new Error('Auth expired');
+    }
   }
   if (method === 'DELETE' || res.status === 204) return null;
   const text = await res.text();
@@ -812,7 +856,7 @@ async function loadAll() {
   }
 }
 
-const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view', timelog: 'timelog-view', 'timelog-legacy': 'timelog-legacy-view', habits: 'habits-view', 'habits-legacy': 'habits-legacy-view' };
+const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view', timelog: 'timelog-view', 'timelog-legacy': 'timelog-legacy-view', habits: 'habits-view', 'habits-legacy': 'habits-legacy-view', 'habits-manage': 'habits-manage-view' };
 
 function showView(v) {
   currentView = v;
@@ -849,6 +893,7 @@ function showView(v) {
   if (v === 'timelog-legacy') renderTlLegacy();
   if (v === 'habits') { habitsViewDate = habitTodayStr(); renderHabits(); }
   if (v === 'habits-legacy') renderHabitsLegacy();
+  if (v === 'habits-manage') renderHabitsManage();
   if (v === 'timelog' && !tlInT) setTimeout(() => document.getElementById('tl-cat')?.focus(), 100);
 }
 
@@ -1212,18 +1257,41 @@ function filterDoneTasks() {
 function renderHistory() {
   const el = document.getElementById('history-content');
   const filtered = filterDoneTasks();
-  let subCount = 0;
+  const now = new Date();
+  const inFilter = (iso) => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    if (histFilter === 'week') { const ago = new Date(now); ago.setDate(now.getDate()-7); return d >= ago; }
+    if (histFilter === 'month') { const ago = new Date(now); ago.setMonth(now.getMonth()-1); return d >= ago; }
+    return true;
+  };
+  // Completed subtasks whose parent is NOT completed — shown standalone until parent finishes
+  const orphanSubs = subtasks.filter(s => {
+    if (!s.completed || !inFilter(s.completed_at)) return false;
+    const parent = tasks.find(t => t.id === s.task_id);
+    return parent && !parent.completed && !parent.is_deleted;
+  });
+  // Count ALL completed subtasks in window (nested + standalone)
+  let subCount = orphanSubs.length;
   filtered.forEach(t => { subCount += subtasks.filter(s => s.task_id === t.id && s.completed).length; });
-  document.getElementById('history-count').textContent = filtered.length
+  document.getElementById('history-count').textContent = (filtered.length || subCount)
     ? `${filtered.length} task${filtered.length!==1?'s':''} · ${subCount} subtask${subCount!==1?'s':''} completed` : '';
-  if (!filtered.length) { el.innerHTML = '<p class="empty">Nothing completed in this period.</p>'; return; }
+  if (!filtered.length && !orphanSubs.length) { el.innerHTML = '<p class="empty">Nothing completed in this period.</p>'; return; }
+
   const grouped = {};
-  filtered.forEach(t => { if (!grouped[t.board_id]) grouped[t.board_id]=[]; grouped[t.board_id].push(t); });
+  filtered.forEach(t => { if (!grouped[t.board_id]) grouped[t.board_id]={tasks:[],subs:[]}; grouped[t.board_id].tasks.push(t); });
+  orphanSubs.forEach(s => {
+    const parent = tasks.find(t => t.id === s.task_id);
+    const bid = parent ? parent.board_id : 'unknown';
+    if (!grouped[bid]) grouped[bid]={tasks:[],subs:[]};
+    grouped[bid].subs.push({ sub: s, parent });
+  });
+
   let html = '';
-  Object.entries(grouped).forEach(([bid, bTasks]) => {
+  Object.entries(grouped).forEach(([bid, g]) => {
     const board = boards.find(b => b.id === bid);
     html += `<div class="history-board-group"><div class="history-board-label">${board ? escHtml(board.name) : 'Unknown'}</div>`;
-    bTasks.forEach(t => {
+    g.tasks.forEach(t => {
       const taskSubs = subtasks.filter(s => s.task_id === t.id);
       html += `
         <div class="history-item" id="history-task-${t.id}">
@@ -1236,10 +1304,30 @@ function renderHistory() {
           <button class="history-del-btn" onclick="deleteTask('${t.id}')">Bin</button>
         </div>`;
     });
+    g.subs.forEach(({ sub, parent }) => {
+      html += `
+        <div class="history-item">
+          <div class="history-check" onclick="uncompleteSubtaskFromHistory('${sub.id}')" title="Mark incomplete"></div>
+          <div class="task-text-wrap" style="flex:1">
+            <div class="history-title">${escHtml(sub.title)}</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:0.78rem;color:var(--ink-faint);">Subtask of: ${parent ? escHtml(parent.title) : 'Unknown'}</div>
+          </div>
+          <div class="history-date">${formatDate(sub.completed_at)}</div>
+        </div>`;
+    });
     html += '</div>';
   });
   el.innerHTML = html;
   filtered.forEach(t => { if (subtasks.some(s => s.task_id === t.id)) renderHistorySubtasks(t.id); });
+}
+
+async function uncompleteSubtaskFromHistory(id) {
+  const s = subtasks.find(s => s.id === id);
+  if (!s) return;
+  s.completed = false; s.completed_at = null;
+  await api('PATCH', `subtasks?id=eq.${id}`, { completed: false, completed_at: null });
+  renderHistory();
+  toast('Moved back to list');
 }
 
 function renderHistorySubtasks(taskId) {
@@ -2051,13 +2139,18 @@ function habitsJumpDate(val) {
 let hmodalPeriod = null;
 let hmodalDays = new Set(['ALL']);
 
-function openHabitModal() {
-  hmodalPeriod = null;
-  hmodalDays = new Set(['ALL']);
-  document.getElementById('hmodal-name').value = '';
+let hmodalEditId = null;
+
+function openHabitModal(editId) {
+  hmodalEditId = editId || null;
+  const h = editId ? habits.find(x => x.id === editId) : null;
+  hmodalPeriod = h ? h.period : null;
+  hmodalDays = h ? new Set(h.days === 'ALL' ? ['ALL'] : h.days.split(',')) : new Set(['ALL']);
+  document.getElementById('hmodal-name').value = h ? h.name : '';
   document.getElementById('hmodal-error').textContent = '';
-  document.querySelectorAll('#hmodal-periods .hmodal-chip').forEach(b => b.classList.remove('sel'));
-  document.querySelectorAll('#hmodal-days .hmodal-chip').forEach(b => b.classList.toggle('sel', b.dataset.d === 'ALL'));
+  document.querySelector('#habit-modal h3').textContent = h ? 'Edit habit' : 'New habit';
+  document.querySelectorAll('#hmodal-periods .hmodal-chip').forEach(b => b.classList.toggle('sel', h ? b.dataset.p === h.period : false));
+  document.querySelectorAll('#hmodal-days .hmodal-chip').forEach(b => b.classList.toggle('sel', hmodalDays.has(b.dataset.d)));
   document.getElementById('habit-modal').classList.add('open');
   setTimeout(() => document.getElementById('hmodal-name').focus(), 50);
 }
@@ -2087,17 +2180,70 @@ async function saveNewHabit() {
   errEl.textContent = '';
   if (!name) { errEl.textContent = 'Name required.'; return; }
   await ensureHabitsLoaded();
-  if (habits.some(h => h.name.toLowerCase() === name.toLowerCase())) {
-    errEl.textContent = 'A habit with this name already exists.';
-    return;
-  }
+  const dup = habits.find(h => h.name.toLowerCase() === name.toLowerCase() && h.id !== hmodalEditId);
+  if (dup) { errEl.textContent = 'A habit with this name already exists.'; return; }
   if (!hmodalPeriod) { errEl.textContent = 'Pick a period.'; return; }
   const days = hmodalDays.has('ALL') ? 'ALL' : Array.from(hmodalDays).join(',');
-  const res = await api('POST', 'habits', { name, period: hmodalPeriod, days, position: habits.length, archived: false });
-  if (res && res[0]) habits.push(res[0]);
-  closeHabitModal();
-  renderHabits();
-  toast('Habit added');
+  if (hmodalEditId) {
+    const h = habits.find(x => x.id === hmodalEditId);
+    const nameChanged = h && h.name !== name;
+    await api('PATCH', `habits?id=eq.${hmodalEditId}`, { name, period: hmodalPeriod, days });
+    if (nameChanged) {
+      // Keep sheet counts unified under one name: rename all past entries too
+      await api('PATCH', `habit_entries?habit_id=eq.${hmodalEditId}`, { habit_name: name });
+    }
+    if (h) { h.name = name; h.period = hmodalPeriod; h.days = days; }
+    closeHabitModal();
+    renderHabitsManage();
+    toast('Habit updated');
+  } else {
+    const res = await api('POST', 'habits', { name, period: hmodalPeriod, days, position: habits.length, archived: false });
+    if (res && res[0]) habits.push(res[0]);
+    closeHabitModal();
+    renderHabits();
+    toast('Habit added');
+  }
+}
+
+// ---- manage habits ----
+async function renderHabitsManage() {
+  await ensureHabitsLoaded();
+  const el = document.getElementById('habits-manage-content');
+  const active = habits.filter(h => !h.archived);
+  if (!active.length) { el.innerHTML = '<p class="empty" style="margin-left:0">No habits yet.</p>'; return; }
+  const byPeriod = { AM: [], DAY: [], PM: [] };
+  active.forEach(h => (byPeriod[h.period] || byPeriod.DAY).push(h));
+  let html = '';
+  ['AM','DAY','PM'].forEach(p => {
+    if (!byPeriod[p].length) return;
+    html += `<div class="habits-section-label">${p}</div>`;
+    byPeriod[p].forEach(h => {
+      const daysLabel = h.days === 'ALL' ? 'Every day' : h.days;
+      html += `<div class="habit-row">
+        <span class="habit-name">${escHtml(h.name)}</span>
+        <span style="font-family:'DM Sans',sans-serif;font-size:0.78rem;color:var(--ink-faint);">${escHtml(daysLabel)}</span>
+        <button class="task-action-btn" onclick="openHabitModal('${h.id}')">Edit</button>
+        <button class="task-action-btn" onclick="deleteHabitForever('${h.id}','${escHtml(h.name).replace(/'/g,"\\'")}')">Delete</button>
+      </div>`;
+    });
+  });
+  el.innerHTML = html;
+}
+
+function deleteHabitForever(id, name) {
+  openConfirm(`Delete "${name}"? It will be removed from this list and stop generating. Its logged history stays in Legacy.`, 'Delete', async () => {
+    await api('DELETE', `habits?id=eq.${id}`);
+    habits = habits.filter(h => h.id !== id);
+    renderHabitsManage();
+    toast('Habit deleted');
+  });
+}
+
+function copyHabitNames() {
+  const names = habits.filter(h => !h.archived).map(h => h.name).join('\n');
+  if (!names) { toast('No habits to copy'); return; }
+  navigator.clipboard && navigator.clipboard.writeText(names);
+  toast('Copied — paste into Habits tab column A');
 }
 
 // ---- lazy backfill of past days ----
