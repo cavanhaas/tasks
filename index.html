@@ -267,6 +267,17 @@
   .modal-btns .ok { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   .modal-btns button:hover { opacity: 0.75; }
 
+  .fail-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 300; }
+  .fail-modal-overlay.open { display: flex; }
+  .fail-modal { background: var(--paper); border: 2px solid var(--red); padding: 1.5rem; width: min(480px, 90vw); max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 4px 30px rgba(0,0,0,0.4); }
+  .fail-modal h3 { font-family: 'Syne', sans-serif; font-size: 1.1rem; color: var(--red); margin-bottom: 0.75rem; }
+  .fail-modal-what { font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: var(--ink); margin-bottom: 0.75rem; }
+  .fail-modal-content { font-family: monospace; font-size: 0.8rem; color: var(--ink-light); background: var(--bg); border-radius: 4px; padding: 0.75rem; overflow: auto; white-space: pre-wrap; word-break: break-word; flex: 1; min-height: 60px; max-height: 40vh; margin-bottom: 1rem; }
+  .fail-modal-btns { display: flex; gap: 0.75rem; justify-content: flex-end; }
+  .fail-modal-btns button { font-family: 'DM Sans', sans-serif; font-size: 0.92rem; padding: 0.5rem 1.1rem; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--ink); cursor: pointer; transition: all 0.15s; }
+  .fail-modal-btns button:hover { border-color: #f0c040; color: #f0c040; }
+  .fail-modal-btns .ok-btn { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
   .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--ink); color: var(--paper); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; padding: 0.55rem 1.1rem; opacity: 0; transition: all 0.2s; pointer-events: none; white-space: nowrap; z-index: 200; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -344,7 +355,7 @@
 <div id="app">
   <div class="topbar">
     <div class="topbar-left">
-      <h1>C.F.H.</h1>
+      <h1 style="cursor:pointer" onclick="showView('tasks')" title="Go to Lists">C.F.H.</h1>
       <button class="journal-icon-btn" id="journal-icon-btn" onclick="showView('journal')" title="Journal" aria-label="Open journal">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="11" y1="8" x2="17" y2="8"/><line x1="11" y1="12" x2="17" y2="12"/><line x1="11" y1="16" x2="15" y2="16"/></svg>
       </button>
@@ -487,6 +498,18 @@
   </div>
 </div>
 
+<div class="fail-modal-overlay" id="fail-modal">
+  <div class="fail-modal">
+    <h3>Save failed</h3>
+    <div class="fail-modal-what" id="fail-modal-what"></div>
+    <div class="fail-modal-content" id="fail-modal-content"></div>
+    <div class="fail-modal-btns">
+      <button onclick="failModalCopy()">Copy content</button>
+      <button class="ok-btn" onclick="document.getElementById('fail-modal').classList.remove('open')">OK</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -504,14 +527,68 @@ function getH() {
   };
 }
 
+function extractTypedContent(body) {
+  if (!body) return '';
+  const parts = [];
+  const textFields = ['title', 'whiteboard', 'journal', 'legacy', 'row_text', 'category', 'break_notes', 'name'];
+  for (const f of textFields) {
+    if (typeof body[f] === 'string' && body[f].trim()) {
+      parts.push(f.toUpperCase() + ':\n' + body[f]);
+    }
+  }
+  return parts.join('\n\n');
+}
+
+function showFailModal(what, content) {
+  document.getElementById('fail-modal-what').textContent = what;
+  document.getElementById('fail-modal-content').textContent = content || '(no typed content in this save)';
+  document.getElementById('fail-modal').classList.add('open');
+}
+
+function failModalCopy() {
+  const t = document.getElementById('fail-modal-content').textContent;
+  navigator.clipboard && navigator.clipboard.writeText(t);
+  toast('Copied');
+}
+
+function forceLogout() {
+  clearSession();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  const errEl = document.getElementById('login-error');
+  if (errEl) errEl.textContent = 'Session expired — please sign in again.';
+}
+
 async function api(method, path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method, headers: getH(),
-    body: body ? JSON.stringify(body) : undefined
-  });
+  let res;
+  try {
+    res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      method, headers: getH(),
+      body: body ? JSON.stringify(body) : undefined
+    });
+  } catch (networkErr) {
+    // Total network failure (offline etc.)
+    if (method !== 'GET') {
+      showFailModal(`${method} ${path} failed — network error. Your change was NOT saved.`, extractTypedContent(body));
+    }
+    throw networkErr;
+  }
+  // Auth failure — token expired/invalid
+  if (res.status === 401) {
+    if (method !== 'GET') {
+      showFailModal(`${method} ${path} failed — session expired. Your change was NOT saved. Copy your content, then sign back in.`, extractTypedContent(body));
+    }
+    forceLogout();
+    throw new Error('Auth expired');
+  }
   if (method === 'DELETE' || res.status === 204) return null;
   const text = await res.text();
-  if (!res.ok) throw new Error(text);
+  if (!res.ok) {
+    if (method !== 'GET') {
+      showFailModal(`${method} ${path} failed (${res.status}). Your change was NOT saved.`, extractTypedContent(body));
+    }
+    throw new Error(text);
+  }
   return text ? JSON.parse(text) : null;
 }
 
@@ -1383,12 +1460,44 @@ function refreshJournalTimestampIfUnfrozen() {
   }
 }
 
+let draftSaveTimer = null;
+
 function onJournalFieldInput() {
   if (!journalFrozenTs) {
     journalFrozenTs = formatJournalTimestamp(new Date());
     const el = document.getElementById('journal-ts');
     if (el) el.textContent = journalFrozenTs;
   }
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(saveDraft, 800);
+}
+
+async function saveDraft() {
+  if (!journalRowId) return;
+  const draft = JSON.stringify({
+    ts: journalFrozenTs,
+    loc: document.getElementById('journal-location').value,
+    title: document.getElementById('journal-title').value,
+    body: document.getElementById('journal-body').value
+  });
+  await api('PATCH', `journal_data?id=eq.${journalRowId}`, { draft });
+}
+
+function restoreDraft(draftStr) {
+  if (!draftStr) return;
+  try {
+    const d = JSON.parse(draftStr);
+    if (d.body || d.loc || d.title) {
+      document.getElementById('journal-location').value = d.loc || '';
+      document.getElementById('journal-title').value = d.title || '';
+      document.getElementById('journal-body').value = d.body || '';
+      if (d.ts) {
+        journalFrozenTs = d.ts;
+        const el = document.getElementById('journal-ts');
+        if (el) el.textContent = d.ts;
+      }
+    }
+  } catch(e) {}
 }
 
 function uppercaseField(el) {
@@ -1415,6 +1524,7 @@ async function ensureJournalLoaded() {
     }
     if (jp) jp.innerHTML = rows[0].journal || '';
     if (lg) lg.innerHTML = rows[0].legacy || '';
+    restoreDraft(rows[0].draft);
     // Restore journal body height
     const jb = document.getElementById('journal-body');
     if (jb) {
@@ -1474,6 +1584,8 @@ async function submitJournalEntry() {
   document.getElementById('journal-title').value = '';
   document.getElementById('journal-body').value = '';
   journalFrozenTs = null;
+  clearTimeout(draftSaveTimer);
+  await api('PATCH', `journal_data?id=eq.${journalRowId}`, { draft: '' });
   refreshJournalTimestampIfUnfrozen();
   toast('Entry saved to Journal');
 }
