@@ -80,7 +80,7 @@
   .clock-icon-btn svg { width: 20px; height: 20px; }
   #timelog-view, #timelog-legacy-view { display: none; }
   .tl-paper { padding: 1.5rem; }
-  .tl-inputs { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
+  .tl-inputs { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 0.6rem; }
   .tl-input { width: 100%; border: none; border-bottom: 1.5px solid var(--ink-faint); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 1.25rem; padding: 0.5rem 0.4rem; color: var(--ink); outline: none; transition: all 0.15s; border-radius: 4px 4px 0 0; }
   .tl-input:focus { border-color: #f0c040; background: var(--unsaved); }
   .tl-input::placeholder { color: var(--ink-faint); }
@@ -98,7 +98,7 @@
   .tl-row-box { display: flex; gap: 8px; align-items: stretch; }
   .tl-row-text { flex: 1; font-family: monospace; font-size: 0.78rem; background: var(--bg); border-radius: 4px; padding: 10px 12px; overflow-x: auto; white-space: nowrap; color: var(--ink-faint); }
   .tl-row-actions { display: flex; gap: 6px; margin-top: 0.75rem; justify-content: flex-end; }
-  .tl-status { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 1rem; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+  .tl-status { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: flex-start; gap: 6px; }
   .tl-pulse { width: 9px; height: 9px; border-radius: 50%; display: none; }
   .tl-pulse.green { display: inline-block; background: #2ecc71; animation: tlpulse 1.6s ease-in-out infinite; }
   .tl-pulse.orange { display: inline-block; background: #f39c12; animation: tlpulse 1.6s ease-in-out infinite; }
@@ -430,10 +430,10 @@
 
   <div id="timelog-view">
     <div class="paper tl-paper">
+      <div class="tl-status"><span class="tl-pulse" id="tl-pulse"></span><span id="tl-status">Idle</span></div>
       <div class="tl-inputs">
         <input class="tl-input" id="tl-cat" placeholder="Task (e.g. Safety Training)" />
       </div>
-      <div class="tl-status"><span class="tl-pulse" id="tl-pulse"></span><span id="tl-status">Idle</span></div>
       <div class="tl-btns">
         <button class="tl-btn" id="tl-btnIn" onclick="tlClockIn()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Clock in
@@ -630,7 +630,18 @@ function showView(v) {
   if (v === 'today') renderToday();
   if (v === 'history') renderHistory();
   if (v === 'trash') renderTrash();
-  if (v === 'journal') ensureJournalLoaded().then(() => { refreshJournalTimestampIfUnfrozen(); if (!journalFrozenTs) setTimeout(() => document.getElementById('journal-location')?.focus(), 100); });
+  if (v === 'journal') ensureJournalLoaded().then(() => {
+    refreshJournalTimestampIfUnfrozen();
+    setTimeout(() => {
+      const jb = document.getElementById('journal-body');
+      if (jb && jb.value.trim()) {
+        jb.focus();
+        jb.setSelectionRange(jb.value.length, jb.value.length);
+      } else if (!journalFrozenTs) {
+        document.getElementById('journal-location')?.focus();
+      }
+    }, 100);
+  });
   if (v === 'journalpage') ensureJournalLoaded();
   if (v === 'legacy') ensureJournalLoaded();
   if (v === 'timelog-legacy') renderTlLegacy();
@@ -1627,7 +1638,8 @@ async function tlClockOut() {
   }
   // Auto-save to legacy
   await api('POST', 'time_logs', { row_text: row });
-  // Clear active session in DB
+  // Clear active session in DB and task field
+  document.getElementById('tl-cat').value = '';
   tlInT = null; tlBreakMs = 0; tlBreakNotes = '';
   await tlSaveSession();
   tlInT = null;
