@@ -713,7 +713,7 @@ function confirmDeleteBoard(id, name) {
 function renderPaper() {
   const el = document.getElementById('paper-content');
   if (!boards.length) { el.innerHTML = '<p class="empty">No boards yet — add one above.</p>'; return; }
-  const boardTasks = tasks.filter(t => t.board_id === activeBoard && !t.completed);
+  const boardTasks = tasks.filter(t => t.board_id === activeBoard && !t.completed).sort((a,b) => (a.position||0) - (b.position||0));
   let html = `
     <div class="add-task-row" id="add-task-row">
       <input class="add-task-input" id="new-task-input" placeholder="New task…"
@@ -763,7 +763,7 @@ function taskHTML(t) {
 function renderSubtasks(taskId, readOnly) {
   const el = document.getElementById(`subtasks-${taskId}`);
   if (!el) return;
-  const subs = subtasks.filter(s => s.task_id === taskId);
+  const subs = subtasks.filter(s => s.task_id === taskId).sort((a,b) => (a.position||0) - (b.position||0));
   let html = subs.map(s => `
     <div class="subtask-row" id="sub-${s.id}" data-subtask-id="${s.id}" data-task-id="${taskId}">
       <div class="subtask-drag-handle" data-subtask-id="${s.id}" data-task-id="${taskId}"></div>
@@ -1626,8 +1626,10 @@ async function tlClockOut() {
   const total = tlOutT - tlInT;
   const adjusted = Math.max(0, total - tlBreakMs);
   const cat = document.getElementById('tl-cat').value || '';
-  // Format: Start | Stop | Adjusted | Break | Total | Category | Notes(empty) | Break Notes
-  const row = tlFmtDate(tlInT)+' '+tlFmtTime(tlInT)+'\t'+tlFmtDate(tlOutT)+' '+tlFmtTime(tlOutT)+'\t'+tlFmtDur(adjusted)+'\t'+tlFmtDur(tlBreakMs)+'\t'+tlFmtDur(total)+'\t'+cat+'\t\t'+tlBreakNotes;
+  // Optional notes popup — Enter with text saves it, Enter empty skips
+  const notes = (window.prompt('Notes (optional):', '') || '').trim();
+  // Format: Start | Stop | Adjusted | Break | Total | Category | Notes | Break Notes
+  const row = tlFmtDate(tlInT)+' '+tlFmtTime(tlInT)+'\t'+tlFmtDate(tlOutT)+' '+tlFmtTime(tlOutT)+'\t'+tlFmtDur(adjusted)+'\t'+tlFmtDur(tlBreakMs)+'\t'+tlFmtDur(total)+'\t'+cat+'\t'+notes+'\t'+tlBreakNotes;
   const rowEl = document.getElementById('tl-row');
   rowEl.textContent = row;
   rowEl.style.color = 'var(--ink-light)';
