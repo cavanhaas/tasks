@@ -85,10 +85,10 @@
   .tl-input:focus { border-color: var(--ink); }
   .tl-input::placeholder { color: var(--ink-faint); }
   .tl-btns { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 1.25rem; }
-  .tl-btn { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; padding: 0.55rem 0.5rem; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink-light); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; }
-  .tl-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .tl-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-  .tl-btn.danger.active { background: var(--red); color: #fff; border-color: var(--red); }
+  .tl-btn { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; padding: 0.55rem 0.5rem; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--ink); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; }
+  .tl-btn:hover { border-color: #f0c040; color: #f0c040; }
+  .tl-btn.green { background: #1e7a3c; color: #fff; border-color: #1e7a3c; }
+  .tl-btn.orange { background: #d97a1f; color: #fff; border-color: #d97a1f; }
   .tl-counters { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 1.25rem; }
   .tl-counter { background: var(--bg); border-radius: 4px; padding: 10px 12px; }
   .tl-counter-label { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; color: var(--ink-faint); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 2px; }
@@ -426,8 +426,7 @@
   <div id="timelog-view">
     <div class="paper tl-paper">
       <div class="tl-inputs">
-        <input class="tl-input" id="tl-cat" placeholder="Category (e.g. Safety Training)" />
-        <input class="tl-input" id="tl-note" placeholder="Notes (optional)" />
+        <input class="tl-input" id="tl-cat" placeholder="Task (e.g. Safety Training)" />
       </div>
       <div id="tl-status" class="tl-status">Idle</div>
       <div class="tl-btns">
@@ -435,7 +434,7 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Clock in
         </button>
         <button class="tl-btn" id="tl-btnBreak" onclick="tlBreak()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Break
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg><span id="tl-break-label">Start break</span>
         </button>
         <button class="tl-btn" id="tl-btnOut" onclick="tlClockOut()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Clock out
@@ -453,7 +452,6 @@
         </div>
         <div class="tl-row-actions">
           <button class="task-action-btn" onclick="tlCopy()">Copy</button>
-          <button class="task-action-btn" onclick="tlSaveToLegacy()">Save to Legacy</button>
           <button class="task-action-btn" onclick="showView('timelog-legacy')">Legacy</button>
         </div>
       </div>
@@ -594,6 +592,7 @@ async function init() {
   renderPaper();
   const savedView = localStorage.getItem('lastView');
   if (savedView && VIEW_IDS[savedView]) showView(savedView);
+  tlRestoreSession();
 }
 
 async function loadAll() {
@@ -1471,8 +1470,10 @@ async function deleteLegacy() {
 }
 
 
-// TIME LOGGER
+// TIME LOGGER (persistent session)
 let tlInT = null, tlOutT = null, tlBreakStart = null, tlBreakMs = 0, tlOnBreak = false, tlTick = null;
+let tlBreakNotes = '';
+let tlSessionRowId = null;
 
 function tlPad(n) { return String(n).padStart(2,'0'); }
 function tlFmtShort(ms) { let s=Math.round(ms/1000); let h=Math.floor(s/3600); s%=3600; let m=Math.floor(s/60); return h+':'+tlPad(m); }
@@ -1490,51 +1491,134 @@ function tlRefresh() {
   document.getElementById('tl-bill').textContent = tlFmtShort(Math.max(0, total - curBreak));
 }
 
-function tlClockIn() {
-  tlInT = new Date(); tlOutT = null; tlBreakMs = 0; tlOnBreak = false; tlBreakStart = null;
-  document.getElementById('tl-status').textContent = 'Clocked in';
-  document.getElementById('tl-row').textContent = 'Row appears here after clock out';
-  document.getElementById('tl-row').style.color = 'var(--ink-faint)';
-  document.getElementById('tl-btnIn').classList.add('active');
-  document.getElementById('tl-btnBreak').classList.remove('active');
-  document.getElementById('tl-btnOut').classList.remove('active');
+function tlSetButtons(state) {
+  const btnIn = document.getElementById('tl-btnIn');
+  const btnBreak = document.getElementById('tl-btnBreak');
+  const breakLabel = document.getElementById('tl-break-label');
+  btnIn.classList.remove('green');
+  btnBreak.classList.remove('orange');
+  breakLabel.textContent = 'Start break';
+  if (state === 'in') {
+    btnIn.classList.add('green');
+  } else if (state === 'break') {
+    btnBreak.classList.add('orange');
+    breakLabel.textContent = 'Stop break';
+  }
+}
+
+async function tlGetSessionRow() {
+  if (tlSessionRowId) return tlSessionRowId;
+  const rows = await api('GET', 'active_session?select=id&limit=1');
+  if (rows && rows[0]) tlSessionRowId = rows[0].id;
+  return tlSessionRowId;
+}
+
+async function tlSaveSession() {
+  const id = await tlGetSessionRow();
+  if (!id) return;
+  await api('PATCH', `active_session?id=eq.${id}`, {
+    clock_in: tlInT ? tlInT.toISOString() : null,
+    break_start: tlOnBreak && tlBreakStart ? new Date(tlBreakStart).toISOString() : null,
+    break_ms: tlBreakMs,
+    on_break: tlOnBreak,
+    category: document.getElementById('tl-cat').value || '',
+    break_notes: tlBreakNotes
+  });
+}
+
+async function tlRestoreSession() {
+  const rows = await api('GET', 'active_session?select=*&limit=1');
+  if (!rows || !rows[0]) return;
+  tlSessionRowId = rows[0].id;
+  const s = rows[0];
+  if (!s.clock_in) return; // no active session
+  tlInT = new Date(s.clock_in);
+  tlOutT = null;
+  tlBreakMs = s.break_ms || 0;
+  tlOnBreak = !!s.on_break;
+  tlBreakStart = s.break_start ? new Date(s.break_start).getTime() : null;
+  tlBreakNotes = s.break_notes || '';
+  document.getElementById('tl-cat').value = s.category || '';
+  document.getElementById('tl-status').textContent = tlOnBreak ? 'On break' : 'Clocked in';
+  tlSetButtons(tlOnBreak ? 'break' : 'in');
   if (tlTick) clearInterval(tlTick);
   tlTick = setInterval(tlRefresh, 1000);
   tlRefresh();
 }
 
-function tlBreak() {
-  if (!tlInT || tlOutT) return;
-  if (!tlOnBreak) {
-    tlOnBreak = true; tlBreakStart = Date.now();
-    document.getElementById('tl-status').textContent = 'On break';
-    document.getElementById('tl-btnBreak').classList.add('active');
-  } else {
-    tlOnBreak = false; tlBreakMs += Date.now() - tlBreakStart;
+async function tlClockIn() {
+  // If on break, clicking Clock in ends the break
+  if (tlInT && tlOnBreak && !tlOutT) {
+    tlOnBreak = false;
+    tlBreakMs += Date.now() - tlBreakStart;
+    tlBreakStart = null;
     document.getElementById('tl-status').textContent = 'Clocked in';
-    document.getElementById('tl-btnBreak').classList.remove('active');
+    tlSetButtons('in');
+    tlRefresh();
+    await tlSaveSession();
+    return;
   }
+  if (tlInT && !tlOutT) return; // already clocked in, not on break — ignore
+  tlInT = new Date(); tlOutT = null; tlBreakMs = 0; tlOnBreak = false; tlBreakStart = null;
+  tlBreakNotes = '';
+  document.getElementById('tl-status').textContent = 'Clocked in';
+  document.getElementById('tl-row').textContent = 'Row appears here after clock out';
+  document.getElementById('tl-row').style.color = 'var(--ink-faint)';
+  tlSetButtons('in');
+  if (tlTick) clearInterval(tlTick);
+  tlTick = setInterval(tlRefresh, 1000);
   tlRefresh();
+  await tlSaveSession();
 }
 
-function tlClockOut() {
+async function tlBreak() {
+  if (!tlInT || tlOutT) return;
+  if (!tlOnBreak) {
+    // Starting a break — prompt for note
+    const note = window.prompt('Break note (optional):', '');
+    tlOnBreak = true; tlBreakStart = Date.now();
+    if (note && note.trim()) {
+      tlBreakNotes = tlBreakNotes ? tlBreakNotes + ' * ' + note.trim() : note.trim();
+    }
+    document.getElementById('tl-status').textContent = 'On break';
+    tlSetButtons('break');
+  } else {
+    tlOnBreak = false; tlBreakMs += Date.now() - tlBreakStart;
+    tlBreakStart = null;
+    document.getElementById('tl-status').textContent = 'Clocked in';
+    tlSetButtons('in');
+  }
+  tlRefresh();
+  await tlSaveSession();
+}
+
+async function tlClockOut() {
   if (!tlInT) return;
-  if (tlOnBreak) { tlOnBreak = false; tlBreakMs += Date.now() - tlBreakStart; }
+  if (tlOnBreak) { tlOnBreak = false; tlBreakMs += Date.now() - tlBreakStart; tlBreakStart = null; }
   tlOutT = new Date();
   document.getElementById('tl-status').textContent = 'Clocked out';
-  document.getElementById('tl-btnIn').classList.remove('active');
-  document.getElementById('tl-btnBreak').classList.remove('active');
-  document.getElementById('tl-btnOut').classList.add('danger','active');
+  tlSetButtons('idle');
   if (tlTick) clearInterval(tlTick);
   tlRefresh();
   const total = tlOutT - tlInT;
-  const bill = Math.max(0, total - tlBreakMs);
+  const adjusted = Math.max(0, total - tlBreakMs);
   const cat = document.getElementById('tl-cat').value || '';
-  const note = document.getElementById('tl-note').value || '';
-  const row = tlFmtDate(tlInT)+' '+tlFmtTime(tlInT)+'	'+tlFmtDate(tlOutT)+' '+tlFmtTime(tlOutT)+'	'+tlFmtDur(bill)+'	'+tlFmtDur(tlBreakMs)+'	'+tlFmtDur(total)+'	'+cat+'	'+note+'	';
+  // Format: Start | Stop | Adjusted | Break | Total | Category | Notes(empty) | Break Notes
+  const row = tlFmtDate(tlInT)+' '+tlFmtTime(tlInT)+'\t'+tlFmtDate(tlOutT)+' '+tlFmtTime(tlOutT)+'\t'+tlFmtDur(adjusted)+'\t'+tlFmtDur(tlBreakMs)+'\t'+tlFmtDur(total)+'\t'+cat+'\t\t'+tlBreakNotes;
   const rowEl = document.getElementById('tl-row');
   rowEl.textContent = row;
   rowEl.style.color = 'var(--ink-light)';
+  // Auto-copy to clipboard
+  if (navigator.clipboard) {
+    try { await navigator.clipboard.writeText(row); toast('Copied — Cmd+V into Sheets'); }
+    catch(e) { toast('Row ready (copy failed — use Copy button)'); }
+  }
+  // Auto-save to legacy
+  await api('POST', 'time_logs', { row_text: row });
+  // Clear active session in DB
+  tlInT = null; tlBreakMs = 0; tlBreakNotes = '';
+  await tlSaveSession();
+  tlInT = null;
 }
 
 function tlCopy() {
@@ -1542,14 +1626,6 @@ function tlCopy() {
   if (t.startsWith('Row appears')) return;
   navigator.clipboard && navigator.clipboard.writeText(t);
   toast('Copied to clipboard');
-}
-
-async function tlSaveToLegacy() {
-  const t = document.getElementById('tl-row').textContent;
-  if (t.startsWith('Row appears')) { toast('Clock out first'); return; }
-  const cat = document.getElementById('tl-cat').value || '';
-  await api('POST', 'time_logs', { row_text: t });
-  toast('Saved to Legacy');
 }
 
 async function renderTlLegacy() {
