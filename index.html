@@ -530,11 +530,27 @@ function getH() {
 function extractTypedContent(body) {
   if (!body) return '';
   const parts = [];
+  // Unpack journal draft bundle into labeled parts
+  if (typeof body.draft === 'string' && body.draft.trim()) {
+    try {
+      const d = JSON.parse(body.draft);
+      if (d.ts) parts.push('TIMESTAMP:\n' + d.ts);
+      if (d.loc) parts.push('LOCATION:\n' + d.loc);
+      if (d.title) parts.push('TITLE:\n' + d.title);
+      if (d.body) parts.push('BODY:\n' + d.body);
+    } catch(e) {
+      parts.push('DRAFT (raw):\n' + body.draft);
+    }
+  }
   const textFields = ['title', 'whiteboard', 'journal', 'legacy', 'row_text', 'category', 'break_notes', 'name'];
   for (const f of textFields) {
     if (typeof body[f] === 'string' && body[f].trim()) {
       parts.push(f.toUpperCase() + ':\n' + body[f]);
     }
+  }
+  // Raw fallback — never show nothing if a payload existed
+  if (!parts.length) {
+    try { return 'RAW PAYLOAD:\n' + JSON.stringify(body, null, 2); } catch(e) { return String(body); }
   }
   return parts.join('\n\n');
 }
@@ -1574,11 +1590,22 @@ async function submitJournalEntry() {
 
   const journalEl = document.getElementById('journal-page-content');
   const legacyEl = document.getElementById('legacy-content');
+  const prevJournal = journalEl.innerHTML;
+  const prevLegacy = legacyEl.innerHTML;
   // Append to bottom so oldest is at top, newest at bottom
-  journalEl.innerHTML = journalEl.innerHTML + entryHtml;
-  legacyEl.innerHTML = legacyEl.innerHTML + entryHtml;
+  journalEl.innerHTML = prevJournal + entryHtml;
+  legacyEl.innerHTML = prevLegacy + entryHtml;
 
-  await api('PATCH', `journal_data?id=eq.${journalRowId}`, { journal: journalEl.innerHTML, legacy: legacyEl.innerHTML });
+  try {
+    await api('PATCH', `journal_data?id=eq.${journalRowId}`, { journal: journalEl.innerHTML, legacy: legacyEl.innerHTML });
+  } catch(e) {
+    // Revert on-screen state since nothing persisted; composer keeps the text, draft is still saved
+    journalEl.innerHTML = prevJournal;
+    legacyEl.innerHTML = prevLegacy;
+    showFailModal('Journal entry failed to save. Your entry is shown below — copy it before closing. Your text is also still in the composer.',
+      'HEADER:\n' + headerText + '\n\nBODY:\n' + body);
+    return;
+  }
 
   document.getElementById('journal-location').value = '';
   document.getElementById('journal-title').value = '';
