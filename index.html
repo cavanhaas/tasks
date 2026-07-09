@@ -81,8 +81,8 @@
   #timelog-view, #timelog-legacy-view { display: none; }
   .tl-paper { padding: 1.5rem; }
   .tl-inputs { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
-  .tl-input { width: 100%; border: none; border-bottom: 1.5px solid var(--ink-faint); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 1rem; padding: 0.4rem 0; color: var(--ink); outline: none; transition: border-color 0.15s; }
-  .tl-input:focus { border-color: var(--ink); }
+  .tl-input { width: 100%; border: none; border-bottom: 1.5px solid var(--ink-faint); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 1.25rem; padding: 0.5rem 0.4rem; color: var(--ink); outline: none; transition: all 0.15s; border-radius: 4px 4px 0 0; }
+  .tl-input:focus { border-color: #f0c040; background: var(--unsaved); }
   .tl-input::placeholder { color: var(--ink-faint); }
   .tl-btns { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 1.25rem; }
   .tl-btn { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; padding: 0.55rem 0.5rem; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--ink); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; }
@@ -98,7 +98,11 @@
   .tl-row-box { display: flex; gap: 8px; align-items: stretch; }
   .tl-row-text { flex: 1; font-family: monospace; font-size: 0.78rem; background: var(--bg); border-radius: 4px; padding: 10px 12px; overflow-x: auto; white-space: nowrap; color: var(--ink-faint); }
   .tl-row-actions { display: flex; gap: 6px; margin-top: 0.75rem; justify-content: flex-end; }
-  .tl-status { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 1rem; text-align: right; }
+  .tl-status { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 1rem; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+  .tl-pulse { width: 9px; height: 9px; border-radius: 50%; display: none; }
+  .tl-pulse.green { display: inline-block; background: #2ecc71; animation: tlpulse 1.6s ease-in-out infinite; }
+  .tl-pulse.orange { display: inline-block; background: #f39c12; animation: tlpulse 1.6s ease-in-out infinite; }
+  @keyframes tlpulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.75); } }
   .tl-log-item { padding: 0.6rem 0; border-bottom: 1px solid var(--line); }
   .tl-log-row { font-family: monospace; font-size: 0.78rem; color: var(--ink-light); overflow-x: auto; white-space: nowrap; }
   .tl-log-meta { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; color: var(--ink-faint); margin-top: 2px; }
@@ -121,7 +125,7 @@
 
   .paper { background: var(--paper); border: 1px solid var(--line); box-shadow: var(--shadow); padding: 1.5rem 1.5rem 2rem; position: relative; }
   .paper::before { content: ''; position: absolute; left: 3.25rem; top: 0; bottom: 0; width: 1px; background: var(--margin-line); opacity: 0.5; }
-  .journal-entry-paper::before, .journal-page-paper::before { display: none; }
+  .journal-entry-paper::before, .journal-page-paper::before, .tl-paper::before { display: none; }
 
   .add-task-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.5rem 0.65rem 0; border-bottom: 1px solid var(--line); margin-left: 3.25rem; transition: background 0.15s, border-color 0.15s; border-radius: 6px; }
   .add-task-row.unsaved { background: var(--unsaved); border-bottom-color: var(--unsaved-border); padding-left: 0.5rem; margin-left: 2.75rem; }
@@ -289,7 +293,8 @@
   .journal-entry-paper { padding: 1.5rem; }
   .journal-entry-header-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 0.75rem; margin-bottom: 0.75rem; }
   .j-ts { font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 11pt; color: var(--ink); white-space: nowrap; }
-  .j-loc, .j-title { font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 11pt; color: var(--ink); border: none; background: transparent; outline: none; flex: 1; min-width: 110px; }
+  .j-loc, .j-title { font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 11pt; color: var(--ink); border: none; background: transparent; outline: none; flex: 1; min-width: 110px; border-radius: 4px; padding: 2px 4px; transition: background 0.15s; }
+  .j-loc:focus, .j-title:focus { background: var(--unsaved); }
   .j-loc::placeholder, .j-title::placeholder { color: var(--ink-faint); font-weight: 400; }
   .journal-entry-body { width: 100%; min-height: 220px; border: none; background: transparent; outline: none; resize: vertical; font-family: 'DM Sans', sans-serif; font-weight: 400; font-size: 11pt; color: var(--ink); line-height: 1.6; }
   .journal-entry-body::placeholder { color: var(--ink-faint); font-style: italic; }
@@ -428,7 +433,7 @@
       <div class="tl-inputs">
         <input class="tl-input" id="tl-cat" placeholder="Task (e.g. Safety Training)" />
       </div>
-      <div id="tl-status" class="tl-status">Idle</div>
+      <div class="tl-status"><span class="tl-pulse" id="tl-pulse"></span><span id="tl-status">Idle</span></div>
       <div class="tl-btns">
         <button class="tl-btn" id="tl-btnIn" onclick="tlClockIn()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Clock in
@@ -625,10 +630,11 @@ function showView(v) {
   if (v === 'today') renderToday();
   if (v === 'history') renderHistory();
   if (v === 'trash') renderTrash();
-  if (v === 'journal') ensureJournalLoaded().then(refreshJournalTimestampIfUnfrozen);
+  if (v === 'journal') ensureJournalLoaded().then(() => { refreshJournalTimestampIfUnfrozen(); if (!journalFrozenTs) setTimeout(() => document.getElementById('journal-location')?.focus(), 100); });
   if (v === 'journalpage') ensureJournalLoaded();
   if (v === 'legacy') ensureJournalLoaded();
   if (v === 'timelog-legacy') renderTlLegacy();
+  if (v === 'timelog' && !tlInT) setTimeout(() => document.getElementById('tl-cat')?.focus(), 100);
 }
 
 let dragSrcIndex = null;
@@ -1347,6 +1353,8 @@ let whiteboardSaveTimer = null;
 let journalPageSaveTimer = null;
 
 function formatJournalTimestamp(d) {
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const day = days[d.getDay()];
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   const yy = String(d.getFullYear()).slice(-2);
@@ -1354,7 +1362,7 @@ function formatJournalTimestamp(d) {
   const ampm = h >= 12 ? 'PM' : 'AM';
   h = h % 12; if (h === 0) h = 12;
   const min = String(d.getMinutes()).padStart(2, '0');
-  return `${mm}.${dd}.${yy} ${h}:${min} ${ampm}`;
+  return `${day} ${mm}.${dd}.${yy} ${h}:${min}${ampm}`;
 }
 
 function refreshJournalTimestampIfUnfrozen() {
@@ -1438,7 +1446,7 @@ async function submitJournalEntry() {
 
   if (!body.trim() && !title && !loc) { toast('Nothing to save'); return; }
 
-  const headerText = `${ts}\t${loc}\t\t${title}`;
+  const headerText = `${ts}\t${loc}\t${title}`;
   // Use <b> so bold survives paste into Google Docs; convert newlines to <br> for line breaks
   const bodyHtml = '<br>' + escHtml(body).replace(/\n/g, '<br>');
   const entryHtml = `<div class="j-entry"><div class="j-entry-header"><b>${escHtml(headerText)}</b></div><div class="j-entry-body">${bodyHtml}</div><br></div>`;
@@ -1486,23 +1494,27 @@ function tlRefresh() {
   const end = tlOutT || new Date();
   const curBreak = tlBreakMs + (tlOnBreak ? (Date.now() - tlBreakStart) : 0);
   const total = end - tlInT;
-  document.getElementById('tl-elapsed').textContent = tlFmtShort(total);
-  document.getElementById('tl-break').textContent = tlFmtShort(curBreak);
-  document.getElementById('tl-bill').textContent = tlFmtShort(Math.max(0, total - curBreak));
+  document.getElementById('tl-elapsed').textContent = tlFmtDur(total);
+  document.getElementById('tl-break').textContent = tlFmtDur(curBreak);
+  document.getElementById('tl-bill').textContent = tlFmtDur(Math.max(0, total - curBreak));
 }
 
 function tlSetButtons(state) {
   const btnIn = document.getElementById('tl-btnIn');
   const btnBreak = document.getElementById('tl-btnBreak');
   const breakLabel = document.getElementById('tl-break-label');
+  const pulse = document.getElementById('tl-pulse');
   btnIn.classList.remove('green');
   btnBreak.classList.remove('orange');
+  pulse.className = 'tl-pulse';
   breakLabel.textContent = 'Start break';
   if (state === 'in') {
     btnIn.classList.add('green');
+    pulse.classList.add('green');
   } else if (state === 'break') {
     btnBreak.classList.add('orange');
     breakLabel.textContent = 'Stop break';
+    pulse.classList.add('orange');
   }
 }
 
