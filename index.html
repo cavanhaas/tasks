@@ -67,6 +67,8 @@
   .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 0.75rem; border-bottom: 1.5px solid var(--ink); }
   .topbar h1 { font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); }
   .topbar-right { display: flex; gap: 1.25rem; align-items: center; }
+  .sub-nav { display: none; justify-content: flex-end; gap: 1.25rem; align-items: center; margin: -1.25rem 0 1rem; padding: 0.25rem 0; }
+  .sub-nav.visible { display: flex; }
 
   .top-btn { font-family: 'DM Sans', sans-serif; font-size: 0.92rem; color: var(--ink-light); background: none; border: none; cursor: pointer; letter-spacing: 0.03em; padding: 0; transition: color 0.15s; }
   .top-btn:hover { color: var(--ink); }
@@ -267,6 +269,40 @@
   .modal-btns .ok { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   .modal-btns button:hover { opacity: 0.75; }
 
+
+  /* HABITS */
+  #habits-view, #habits-legacy-view { display: none; }
+  .habits-header { display: flex; align-items: center; justify-content: center; gap: 0.9rem; margin-bottom: 1.25rem; }
+  .habits-date { font-family: 'Syne', sans-serif; font-size: 1.15rem; font-weight: 600; color: var(--ink); letter-spacing: 0.03em; min-width: 200px; text-align: center; }
+  .habits-nav-btn { background: none; border: 1px solid var(--line); border-radius: 4px; color: var(--ink-light); font-size: 1rem; padding: 0.3rem 0.7rem; cursor: pointer; transition: all 0.15s; }
+  .habits-nav-btn:hover:not(:disabled) { border-color: #f0c040; color: #f0c040; }
+  .habits-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .habits-topline { display: flex; justify-content: flex-end; gap: 0.6rem; margin-bottom: 0.75rem; }
+  .habits-section-label { font-family: 'Syne', sans-serif; font-size: 0.9rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); padding: 1rem 0 0.5rem; border-bottom: 1px solid var(--line); margin-bottom: 0.25rem; }
+  .habit-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 0.25rem; border-bottom: 1px solid var(--line); }
+  .habit-name { font-family: 'DM Sans', sans-serif; font-size: 1.1rem; color: var(--ink); flex: 1; }
+  .habit-name.answered-yes { color: #2ecc71; }
+  .habit-name.answered-no { color: var(--red); text-decoration: line-through; }
+  .habit-cb { width: 22px; height: 22px; border: 1.5px solid var(--ink-faint); border-radius: 4px; background: transparent; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; font-family: 'DM Sans', sans-serif; font-size: 0.7rem; color: transparent; }
+  .habit-cb.yes:hover { border-color: #2ecc71; }
+  .habit-cb.no:hover { border-color: var(--red); }
+  .habit-cb.yes.checked { background: #2ecc71; border-color: #2ecc71; }
+  .habit-cb.no.checked { background: var(--red); border-color: var(--red); }
+  .habit-cb.yes.checked::after { content: ''; width: 5px; height: 10px; border: 2px solid #fff; border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); }
+  .habit-cb.no.checked::after { content: '✕'; color: #fff; font-size: 0.85rem; font-weight: 700; transform: none; border: none; width: auto; height: auto; }
+  .habit-cb-label { font-family: 'DM Sans', sans-serif; font-size: 0.68rem; color: var(--ink-faint); letter-spacing: 0.05em; text-transform: uppercase; margin-right: -0.35rem; }
+  .habit-del { font-family: 'DM Sans', sans-serif; font-size: 0.75rem; color: var(--ink-faint); background: none; border: 1px solid transparent; border-radius: 4px; padding: 2px 7px; cursor: pointer; transition: all 0.15s; }
+  .habit-del:hover { color: var(--red); border-color: var(--red); }
+  .habits-empty { font-family: 'DM Sans', sans-serif; font-style: italic; font-size: 0.95rem; color: var(--ink-faint); padding: 0.5rem 0.25rem 0.75rem; }
+  /* habit modal */
+  .hmodal-field { margin-bottom: 1.1rem; }
+  .hmodal-label { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.45rem; }
+  .hmodal-periods, .hmodal-days { display: flex; gap: 6px; flex-wrap: wrap; }
+  .hmodal-chip { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; padding: 5px 12px; border: 1px solid var(--line); border-radius: 20px; background: transparent; color: var(--ink-light); cursor: pointer; transition: all 0.15s; }
+  .hmodal-chip:hover { border-color: #f0c040; color: #f0c040; }
+  .hmodal-chip.sel { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .hmodal-error { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--red); margin-top: 0.5rem; min-height: 1.1em; }
+
   .fail-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 300; }
   .fail-modal-overlay.open { display: flex; }
   .fail-modal { background: var(--paper); border: 2px solid var(--red); padding: 1.5rem; width: min(480px, 90vw); max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 4px 30px rgba(0,0,0,0.4); }
@@ -366,9 +402,13 @@
     <div class="topbar-right">
       <button class="top-btn today-btn" id="btn-today" onclick="showView('today')">Do Today</button>
       <button class="top-btn active" id="btn-tasks" onclick="showView('tasks')">Lists</button>
-      <button class="top-btn" id="btn-history" onclick="showView('history')">Done</button>
-      <button class="top-btn" id="btn-trash" onclick="showView('trash')">Bin</button>
+      <button class="top-btn" id="btn-habits" onclick="showView('habits')">Habits</button>
     </div>
+  </div>
+
+  <div class="sub-nav" id="sub-nav">
+    <button class="top-btn" id="btn-history" onclick="showView('history')">Done</button>
+    <button class="top-btn" id="btn-trash" onclick="showView('trash')">Bin</button>
   </div>
 
   <div id="today-view">
@@ -474,6 +514,36 @@
     </div>
   </div>
 
+  <div id="habits-view">
+    <div class="habits-header">
+      <button class="habits-nav-btn" onclick="habitsNavDay(-1)">◀</button>
+      <div class="habits-date" id="habits-date"></div>
+      <button class="habits-nav-btn" id="habits-fwd" onclick="habitsNavDay(1)">▶</button>
+      <button class="habits-nav-btn" onclick="document.getElementById('habits-datepick').showPicker ? document.getElementById('habits-datepick').showPicker() : document.getElementById('habits-datepick').click()" title="Jump to date">📅</button>
+      <input type="date" id="habits-datepick" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;" onchange="habitsJumpDate(this.value)" />
+    </div>
+    <div class="habits-topline">
+      <button class="task-action-btn" onclick="openHabitModal()">+ Habit</button>
+      <button class="task-action-btn" onclick="showView('habits-legacy')">Legacy</button>
+    </div>
+    <div class="paper tl-paper" id="habits-content"></div>
+  </div>
+
+  <div id="habits-legacy-view">
+    <div class="journal-page-topbar">
+      <button class="journal-back-btn" onclick="showView('habits')">← Back</button>
+      <div class="journal-page-title">Habits Legacy</div>
+      <div style="width:64px"></div>
+    </div>
+    <div class="journal-page-topbar" style="justify-content:flex-end;gap:0.6rem;margin-top:-0.75rem;">
+      <button class="task-action-btn" onclick="habitsLegacyCopy()">Copy All</button>
+      <button class="task-action-btn" onclick="habitsLegacyMarkExported()">Mark Exported</button>
+    </div>
+    <div class="paper tl-paper">
+      <div id="habits-legacy-content" style="font-family:monospace;font-size:0.8rem;color:var(--ink-light);white-space:pre;overflow-x:auto;"></div>
+    </div>
+  </div>
+
   <div id="timelog-legacy-view">
     <div class="journal-page-topbar">
       <button class="journal-back-btn" onclick="showView('timelog')">← Back</button>
@@ -494,6 +564,42 @@
     <div class="modal-btns">
       <button onclick="closeModal()">Cancel</button>
       <button class="ok" id="modal-ok" onclick="modalConfirm()">Add</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="habit-modal">
+  <div class="modal">
+    <h3>New habit</h3>
+    <div class="hmodal-field">
+      <div class="hmodal-label">Name</div>
+      <input id="hmodal-name" placeholder="e.g. Stretch AM" maxlength="50" style="width:100%;border:none;border-bottom:1.5px solid var(--ink-faint);background:transparent;font-family:'DM Sans',sans-serif;font-size:1rem;padding:0.4rem 0;color:var(--ink);outline:none;" />
+    </div>
+    <div class="hmodal-field">
+      <div class="hmodal-label">Period</div>
+      <div class="hmodal-periods" id="hmodal-periods">
+        <button class="hmodal-chip" data-p="AM" onclick="hmodalPickPeriod(this)">AM</button>
+        <button class="hmodal-chip" data-p="DAY" onclick="hmodalPickPeriod(this)">DAY</button>
+        <button class="hmodal-chip" data-p="PM" onclick="hmodalPickPeriod(this)">PM</button>
+      </div>
+    </div>
+    <div class="hmodal-field">
+      <div class="hmodal-label">Days</div>
+      <div class="hmodal-days" id="hmodal-days">
+        <button class="hmodal-chip sel" data-d="ALL" onclick="hmodalPickDay(this)">ALL</button>
+        <button class="hmodal-chip" data-d="MON" onclick="hmodalPickDay(this)">M</button>
+        <button class="hmodal-chip" data-d="TUE" onclick="hmodalPickDay(this)">T</button>
+        <button class="hmodal-chip" data-d="WED" onclick="hmodalPickDay(this)">W</button>
+        <button class="hmodal-chip" data-d="THU" onclick="hmodalPickDay(this)">T</button>
+        <button class="hmodal-chip" data-d="FRI" onclick="hmodalPickDay(this)">F</button>
+        <button class="hmodal-chip" data-d="SAT" onclick="hmodalPickDay(this)">S</button>
+        <button class="hmodal-chip" data-d="SUN" onclick="hmodalPickDay(this)">S</button>
+      </div>
+    </div>
+    <div class="hmodal-error" id="hmodal-error"></div>
+    <div class="modal-btns">
+      <button onclick="closeHabitModal()">Cancel</button>
+      <button class="ok" onclick="saveNewHabit()">Add</button>
     </div>
   </div>
 </div>
@@ -691,6 +797,7 @@ async function init() {
   const savedView = localStorage.getItem('lastView');
   if (savedView && VIEW_IDS[savedView]) showView(savedView);
   tlRestoreSession();
+  habitsBackfill();
 }
 
 async function loadAll() {
@@ -705,7 +812,7 @@ async function loadAll() {
   }
 }
 
-const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view', timelog: 'timelog-view', 'timelog-legacy': 'timelog-legacy-view' };
+const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view', timelog: 'timelog-view', 'timelog-legacy': 'timelog-legacy-view', habits: 'habits-view', 'habits-legacy': 'habits-legacy-view' };
 
 function showView(v) {
   currentView = v;
@@ -714,7 +821,9 @@ function showView(v) {
     const el = document.getElementById(id);
     if (el) el.style.display = (v === name) ? 'block' : 'none';
   });
-  ['today','tasks','history','trash'].forEach(x => document.getElementById(`btn-${x}`)?.classList.toggle('active', x === v));
+  ['today','tasks','history','trash','habits'].forEach(x => document.getElementById(`btn-${x}`)?.classList.toggle('active', x === v));
+  document.getElementById('sub-nav')?.classList.toggle('visible', v === 'tasks' || v === 'history' || v === 'trash');
+  document.getElementById('btn-tasks')?.classList.toggle('active', v === 'tasks' || v === 'history' || v === 'trash');
   const jBtn = document.getElementById('journal-icon-btn');
   if (jBtn) jBtn.classList.toggle('active', v === 'journal' || v === 'journalpage' || v === 'legacy');
   const cBtn = document.getElementById('clock-icon-btn');
@@ -738,6 +847,8 @@ function showView(v) {
   if (v === 'journalpage') ensureJournalLoaded();
   if (v === 'legacy') ensureJournalLoaded();
   if (v === 'timelog-legacy') renderTlLegacy();
+  if (v === 'habits') { habitsViewDate = habitTodayStr(); renderHabits(); }
+  if (v === 'habits-legacy') renderHabitsLegacy();
   if (v === 'timelog' && !tlInT) setTimeout(() => document.getElementById('tl-cat')?.focus(), 100);
 }
 
@@ -1814,6 +1925,239 @@ async function tlDeleteAll() {
   await api('DELETE', 'time_logs?id=neq.00000000-0000-0000-0000-000000000000');
   renderTlLegacy();
   toast('All entries deleted');
+}
+
+
+// ================= HABITS =================
+let habits = [];
+let habitsViewDate = null; // 'YYYY-MM-DD' habit-day being viewed
+let habitEntriesCache = {}; // date -> {habit_id: entry}
+const DAY_ABBR = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+function habitTodayStr() {
+  const d = new Date(Date.now() - 4*3600*1000);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function dateStrToDate(s) { const [y,m,dd] = s.split('-').map(Number); return new Date(y, m-1, dd); }
+function dateStrShift(s, days) {
+  const d = dateStrToDate(s); d.setDate(d.getDate()+days);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function habitDateDisplay(s) {
+  const d = dateStrToDate(s);
+  return DAY_ABBR[d.getDay()]+' '+(d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2);
+}
+function habitScheduledOn(h, dateStr) {
+  if (h.archived) return false;
+  const created = new Date(new Date(h.created_at).getTime() - 4*3600*1000);
+  const createdStr = created.getFullYear()+'-'+String(created.getMonth()+1).padStart(2,'0')+'-'+String(created.getDate()).padStart(2,'0');
+  if (dateStr < createdStr) return false;
+  if (h.days === 'ALL') return true;
+  return h.days.split(',').includes(DAY_ABBR[dateStrToDate(dateStr).getDay()]);
+}
+
+async function ensureHabitsLoaded() {
+  if (habits.length) return;
+  habits = await api('GET', 'habits?order=position') || [];
+}
+
+async function loadEntriesForDate(dateStr) {
+  const rows = await api('GET', `habit_entries?habit_date=eq.${dateStr}`) || [];
+  const map = {};
+  rows.forEach(r => { map[r.habit_id] = r; });
+  habitEntriesCache[dateStr] = map;
+  return map;
+}
+
+async function renderHabits() {
+  await ensureHabitsLoaded();
+  const dateStr = habitsViewDate || habitTodayStr();
+  habitsViewDate = dateStr;
+  document.getElementById('habits-date').textContent = habitDateDisplay(dateStr);
+  document.getElementById('habits-fwd').disabled = dateStr >= habitTodayStr();
+  const entries = await loadEntriesForDate(dateStr);
+  const el = document.getElementById('habits-content');
+  let html = '';
+  ['AM','DAY','PM'].forEach(period => {
+    const scheduled = habits.filter(h => h.period === period && habitScheduledOn(h, dateStr));
+    // include archived habits that have an entry this date
+    const archivedWithEntry = habits.filter(h => h.period === period && h.archived && entries[h.id]);
+    const list = [...scheduled, ...archivedWithEntry];
+    html += `<div class="habits-section-label">${period}</div>`;
+    if (!list.length) { html += '<div class="habits-empty">Nothing scheduled.</div>'; return; }
+    list.forEach(h => {
+      const e = entries[h.id];
+      const result = e ? e.result : '';
+      const nameCls = result === 'YES' ? ' answered-yes' : (result === 'NO' ? ' answered-no' : '');
+      html += `<div class="habit-row">
+        <span class="habit-name${nameCls}">${escHtml(h.name)}</span>
+        <span class="habit-cb-label">Yes</span>
+        <div class="habit-cb yes${result==='YES'?' checked':''}" onclick="setHabitResult('${h.id}','YES')"></div>
+        <span class="habit-cb-label">No</span>
+        <div class="habit-cb no${result==='NO'?' checked':''}" onclick="setHabitResult('${h.id}','NO')"></div>
+        <button class="habit-del" onclick="archiveHabit('${h.id}','${escHtml(h.name).replace(/'/g,"\\'")}')">✕</button>
+      </div>`;
+    });
+  });
+  el.innerHTML = html;
+}
+
+async function setHabitResult(habitId, clicked) {
+  const dateStr = habitsViewDate;
+  const entries = habitEntriesCache[dateStr] || {};
+  const existing = entries[habitId];
+  const current = existing ? existing.result : '';
+  const next = (current === clicked) ? '' : clicked; // clicking checked box clears; clicking other switches
+  const h = habits.find(x => x.id === habitId);
+  if (existing) {
+    existing.result = next;
+    await api('PATCH', `habit_entries?id=eq.${existing.id}`, { result: next });
+  } else {
+    const res = await api('POST', 'habit_entries', {
+      habit_id: habitId, habit_name: h ? h.name : '', period: h ? h.period : '',
+      habit_date: dateStr, result: next
+    });
+    if (res && res[0]) entries[habitId] = res[0];
+    habitEntriesCache[dateStr] = entries;
+  }
+  renderHabits();
+}
+
+function archiveHabit(id, name) {
+  openConfirm(`Archive "${name}"? It will stop appearing but its history is kept.`, 'Archive', async () => {
+    await api('PATCH', `habits?id=eq.${id}`, { archived: true });
+    const h = habits.find(x => x.id === id);
+    if (h) h.archived = true;
+    renderHabits();
+    toast('Habit archived');
+  });
+}
+
+function habitsNavDay(dir) {
+  const next = dateStrShift(habitsViewDate, dir);
+  if (next > habitTodayStr()) return;
+  habitsViewDate = next;
+  renderHabits();
+}
+
+function habitsJumpDate(val) {
+  if (!val) return;
+  if (val > habitTodayStr()) { toast('Cannot view future days'); return; }
+  habitsViewDate = val;
+  renderHabits();
+}
+
+// ---- habit modal ----
+let hmodalPeriod = null;
+let hmodalDays = new Set(['ALL']);
+
+function openHabitModal() {
+  hmodalPeriod = null;
+  hmodalDays = new Set(['ALL']);
+  document.getElementById('hmodal-name').value = '';
+  document.getElementById('hmodal-error').textContent = '';
+  document.querySelectorAll('#hmodal-periods .hmodal-chip').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('#hmodal-days .hmodal-chip').forEach(b => b.classList.toggle('sel', b.dataset.d === 'ALL'));
+  document.getElementById('habit-modal').classList.add('open');
+  setTimeout(() => document.getElementById('hmodal-name').focus(), 50);
+}
+
+function closeHabitModal() { document.getElementById('habit-modal').classList.remove('open'); }
+
+function hmodalPickPeriod(btn) {
+  hmodalPeriod = btn.dataset.p;
+  document.querySelectorAll('#hmodal-periods .hmodal-chip').forEach(b => b.classList.toggle('sel', b === btn));
+}
+
+function hmodalPickDay(btn) {
+  const d = btn.dataset.d;
+  if (d === 'ALL') {
+    hmodalDays = new Set(['ALL']);
+  } else {
+    hmodalDays.delete('ALL');
+    if (hmodalDays.has(d)) hmodalDays.delete(d); else hmodalDays.add(d);
+    if (!hmodalDays.size) hmodalDays.add('ALL');
+  }
+  document.querySelectorAll('#hmodal-days .hmodal-chip').forEach(b => b.classList.toggle('sel', hmodalDays.has(b.dataset.d)));
+}
+
+async function saveNewHabit() {
+  const name = document.getElementById('hmodal-name').value.trim();
+  const errEl = document.getElementById('hmodal-error');
+  errEl.textContent = '';
+  if (!name) { errEl.textContent = 'Name required.'; return; }
+  await ensureHabitsLoaded();
+  if (habits.some(h => h.name.toLowerCase() === name.toLowerCase())) {
+    errEl.textContent = 'A habit with this name already exists.';
+    return;
+  }
+  if (!hmodalPeriod) { errEl.textContent = 'Pick a period.'; return; }
+  const days = hmodalDays.has('ALL') ? 'ALL' : Array.from(hmodalDays).join(',');
+  const res = await api('POST', 'habits', { name, period: hmodalPeriod, days, position: habits.length, archived: false });
+  if (res && res[0]) habits.push(res[0]);
+  closeHabitModal();
+  renderHabits();
+  toast('Habit added');
+}
+
+// ---- lazy backfill of past days ----
+async function habitsBackfill() {
+  await ensureHabitsLoaded();
+  const active = habits.filter(h => !h.archived);
+  if (!active.length) return;
+  const today = habitTodayStr();
+  const windowStart = dateStrShift(today, -30);
+  const existing = await api('GET', `habit_entries?habit_date=gte.${windowStart}&habit_date=lt.${today}&select=habit_id,habit_date`) || [];
+  const have = new Set(existing.map(e => e.habit_id + '|' + e.habit_date));
+  const inserts = [];
+  for (const h of active) {
+    let d = windowStart;
+    while (d < today) {
+      if (habitScheduledOn(h, d) && !have.has(h.id + '|' + d)) {
+        inserts.push({ habit_id: h.id, habit_name: h.name, period: h.period, habit_date: d, result: 'UNANSWERED' });
+      }
+      d = dateStrShift(d, 1);
+    }
+  }
+  if (inserts.length) await api('POST', 'habit_entries', inserts);
+}
+
+// ---- habits legacy ----
+const PERIOD_ORDER = { AM: 0, DAY: 1, PM: 2 };
+
+async function renderHabitsLegacy() {
+  const el = document.getElementById('habits-legacy-content');
+  el.textContent = 'Loading…';
+  const today = habitTodayStr();
+  const rows = await api('GET', `habit_entries?exported=eq.false&habit_date=lt.${today}&order=habit_date`) || [];
+  if (!rows.length) { el.textContent = 'Nothing to export.'; return; }
+  rows.sort((a,b) => a.habit_date === b.habit_date
+    ? (PERIOD_ORDER[a.period]-PERIOD_ORDER[b.period] || a.habit_name.localeCompare(b.habit_name))
+    : a.habit_date.localeCompare(b.habit_date));
+  const lines = rows.map(r => {
+    const d = dateStrToDate(r.habit_date);
+    const dateFmt = (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2);
+    const result = r.result || 'UNANSWERED';
+    return dateFmt+'\t'+DAY_ABBR[d.getDay()]+'\t'+r.period+'\t'+r.habit_name+'\t'+result;
+  });
+  el.textContent = lines.join('\n');
+}
+
+function habitsLegacyCopy() {
+  const t = document.getElementById('habits-legacy-content').textContent;
+  if (!t || t === 'Nothing to export.' || t === 'Loading…') { toast('Nothing to copy'); return; }
+  navigator.clipboard && navigator.clipboard.writeText(t);
+  toast('Copied — paste into Input tab');
+}
+
+function habitsLegacyMarkExported() {
+  const confirmed = window.confirm('Mark all shown rows as exported? They will no longer appear here (data is kept).');
+  if (!confirmed) return;
+  const today = habitTodayStr();
+  api('PATCH', `habit_entries?exported=eq.false&habit_date=lt.${today}`, { exported: true }).then(() => {
+    renderHabitsLegacy();
+    toast('Marked exported');
+  });
 }
 
 loadSession().then(ok => {
