@@ -538,7 +538,7 @@
       <div style="width:64px"></div>
     </div>
     <div class="journal-page-topbar" style="justify-content:flex-end;gap:0.6rem;margin-top:-0.75rem;">
-      <button class="task-action-btn" onclick="copyHabitNames()">Copy names for sheet</button>
+      <button class="task-action-btn" onclick="openMasterList()">Copy names for sheet</button>
     </div>
     <div class="paper tl-paper" id="habits-manage-content"></div>
   </div>
@@ -589,6 +589,19 @@
     <div class="modal-btns">
       <button onclick="closeModal()">Cancel</button>
       <button class="ok" id="modal-ok" onclick="modalConfirm()">Add</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="master-modal">
+  <div class="modal" style="width:min(420px,92vw);">
+    <h3>Habit master list</h3>
+    <p style="font-family:'DM Sans',sans-serif;font-size:0.82rem;color:var(--ink-light);margin-bottom:0.75rem;">This is the full column for the Habits tab in your sheet — includes past habits so old months stay intact.</p>
+    <textarea id="master-textarea" readonly style="width:100%;min-height:220px;max-height:45vh;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:0.6rem;font-family:monospace;font-size:0.85rem;color:var(--ink);outline:none;resize:vertical;"></textarea>
+    <div class="modal-btns" style="margin-top:1rem;">
+      <button id="master-edit-btn" onclick="masterToggleEdit()">Edit</button>
+      <button onclick="masterCopy()">Copy</button>
+      <button class="ok" onclick="masterClose()">Done</button>
     </div>
   </div>
 </div>
@@ -2213,6 +2226,7 @@ async function saveNewHabit() {
     if (nameChanged) {
       // Keep sheet counts unified under one name: rename all past entries too
       await api('PATCH', `habit_entries?habit_id=eq.${hmodalEditId}`, { habit_name: name });
+      masterRenameName(h.name, name);
     }
     if (h) { h.name = name; h.period = hmodalPeriod; h.days = days; }
     closeHabitModal();
@@ -2221,6 +2235,7 @@ async function saveNewHabit() {
   } else {
     const res = await api('POST', 'habits', { name, period: hmodalPeriod, days, position: habits.length, archived: false });
     if (res && res[0]) habits.push(res[0]);
+    masterAppendName(name);
     closeHabitModal();
     renderHabits();
     toast('Habit added');
@@ -2261,11 +2276,75 @@ function deleteHabitForever(id, name) {
   });
 }
 
-function copyHabitNames() {
-  const names = habits.filter(h => !h.archived).map(h => h.name).join('\n');
-  if (!names) { toast('No habits to copy'); return; }
-  navigator.clipboard && navigator.clipboard.writeText(names);
+// ---- habit master list (append-only mirror of the sheet's Habits column) ----
+let masterRowId = null;
+let masterEditing = false;
+
+async function loadMasterList() {
+  const rows = await api('GET', 'habit_master?select=*&limit=1');
+  if (rows && rows[0]) { masterRowId = rows[0].id; return rows[0].names || ''; }
+  return '';
+}
+
+async function saveMasterList(names) {
+  if (!masterRowId) await loadMasterList();
+  if (!masterRowId) return;
+  await api('PATCH', `habit_master?id=eq.${masterRowId}`, { names });
+}
+
+async function masterAppendName(name) {
+  const cur = await loadMasterList();
+  const list = cur ? cur.split('\n').filter(x => x.trim()) : [];
+  if (!list.some(n => n.toLowerCase() === name.toLowerCase())) {
+    list.push(name);
+    await saveMasterList(list.join('\n'));
+  }
+}
+
+async function masterRenameName(oldName, newName) {
+  const cur = await loadMasterList();
+  const list = cur ? cur.split('\n') : [];
+  const idx = list.findIndex(n => n.trim().toLowerCase() === oldName.toLowerCase());
+  if (idx >= 0) { list[idx] = newName; await saveMasterList(list.join('\n')); }
+  else await masterAppendName(newName);
+}
+
+async function openMasterList() {
+  masterEditing = false;
+  const ta = document.getElementById('master-textarea');
+  ta.value = 'Loading…';
+  ta.readOnly = true;
+  document.getElementById('master-edit-btn').textContent = 'Edit';
+  document.getElementById('master-modal').classList.add('open');
+  ta.value = await loadMasterList();
+}
+
+function masterToggleEdit() {
+  const ta = document.getElementById('master-textarea');
+  const btn = document.getElementById('master-edit-btn');
+  if (!masterEditing) {
+    masterEditing = true;
+    ta.readOnly = false;
+    ta.focus();
+    btn.textContent = 'Save';
+  } else {
+    masterEditing = false;
+    ta.readOnly = true;
+    btn.textContent = 'Edit';
+    saveMasterList(ta.value.split('\n').map(x => x.trim()).filter(Boolean).join('\n')).then(() => toast('Master list saved'));
+  }
+}
+
+function masterCopy() {
+  const t = document.getElementById('master-textarea').value;
+  if (!t) { toast('Nothing to copy'); return; }
+  navigator.clipboard && navigator.clipboard.writeText(t);
   toast('Copied — paste into Habits tab column A');
+}
+
+function masterClose() {
+  if (masterEditing) { toast('Save or discard your edit first'); return; }
+  document.getElementById('master-modal').classList.remove('open');
 }
 
 // ---- lazy backfill of past days ----
