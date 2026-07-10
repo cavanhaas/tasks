@@ -526,7 +526,7 @@
     <div class="habits-topline">
       <button class="task-action-btn" onclick="openHabitModal()">+ Habit</button>
       <button class="task-action-btn" onclick="showView('habits-manage')">Manage</button>
-      <button class="task-action-btn" onclick="showView('habits-legacy')">Legacy</button>
+      <button class="task-action-btn" onclick="showView('habits-legacy')">Log</button>
     </div>
     <div class="paper tl-paper" id="habits-content"></div>
   </div>
@@ -546,8 +546,8 @@
   <div id="habits-legacy-view">
     <div class="journal-page-topbar">
       <button class="journal-back-btn" onclick="showView('habits')">← Back</button>
-      <div class="journal-page-title">Habits Legacy</div>
-      <div style="width:64px"></div>
+      <div class="journal-page-title">Habits Log</div>
+      <button class="journal-legacy-btn" onclick="showView('habits-archive')">Legacy</button>
     </div>
     <div class="journal-page-topbar" style="justify-content:flex-end;gap:0.6rem;margin-top:-0.75rem;">
       <button class="task-action-btn" onclick="habitsLegacyCopy()">Copy All</button>
@@ -555,6 +555,17 @@
     </div>
     <div class="paper tl-paper">
       <div id="habits-legacy-content" style="font-family:monospace;font-size:0.8rem;color:var(--ink-light);white-space:pre;overflow-x:auto;"></div>
+    </div>
+  </div>
+
+  <div id="habits-archive-view" style="display:none">
+    <div class="journal-page-topbar">
+      <button class="journal-back-btn" onclick="showView('habits-legacy')">← Back</button>
+      <div class="journal-page-title">Habits Legacy</div>
+      <div style="width:64px"></div>
+    </div>
+    <div class="paper tl-paper">
+      <div id="habits-archive-content" style="font-family:monospace;font-size:0.8rem;color:var(--ink-light);white-space:pre;overflow-x:auto;"></div>
     </div>
   </div>
 
@@ -857,7 +868,7 @@ async function loadAll() {
   }
 }
 
-const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view', timelog: 'timelog-view', 'timelog-legacy': 'timelog-legacy-view', habits: 'habits-view', 'habits-legacy': 'habits-legacy-view', 'habits-manage': 'habits-manage-view' };
+const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view', timelog: 'timelog-view', 'timelog-legacy': 'timelog-legacy-view', habits: 'habits-view', 'habits-legacy': 'habits-legacy-view', 'habits-manage': 'habits-manage-view', 'habits-archive': 'habits-archive-view' };
 
 function showView(v) {
   currentView = v;
@@ -895,6 +906,7 @@ function showView(v) {
   if (v === 'habits') { habitsViewDate = habitTodayStr(); renderHabits(); }
   if (v === 'habits-legacy') renderHabitsLegacy();
   if (v === 'habits-manage') renderHabitsManage();
+  if (v === 'habits-archive') renderHabitsArchive();
   if (v === 'timelog' && !tlInT) setTimeout(() => document.getElementById('tl-cat')?.focus(), 100);
 }
 
@@ -2304,6 +2316,21 @@ function habitsLegacyCopy() {
   if (!t || t === 'Nothing to export.' || t === 'Loading…') { toast('Nothing to copy'); return; }
   navigator.clipboard && navigator.clipboard.writeText(t);
   toast('Copied — paste into Input tab');
+}
+
+async function renderHabitsArchive() {
+  const el = document.getElementById('habits-archive-content');
+  el.textContent = 'Loading…';
+  const rows = await api('GET', 'habit_entries?exported=eq.true&order=habit_date.desc') || [];
+  if (!rows.length) { el.textContent = 'Nothing exported yet.'; return; }
+  rows.sort((a,b) => a.habit_date === b.habit_date
+    ? (PERIOD_ORDER[a.period]-PERIOD_ORDER[b.period] || a.habit_name.localeCompare(b.habit_name))
+    : b.habit_date.localeCompare(a.habit_date));
+  el.textContent = rows.map(r => {
+    const d = dateStrToDate(r.habit_date);
+    const dateFmt = (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2);
+    return dateFmt+'\t'+DAY_ABBR[d.getDay()]+'\t'+r.period+'\t'+r.habit_name+'\t'+(r.result || 'UNANSWERED');
+  }).join('\n');
 }
 
 function habitsLegacyMarkExported() {
