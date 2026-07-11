@@ -609,6 +609,7 @@
     <p style="font-family:'DM Sans',sans-serif;font-size:0.82rem;color:var(--ink-light);margin-bottom:0.75rem;">This is the full column for the Habits tab in your sheet — includes past habits so old months stay intact.</p>
     <textarea id="master-textarea" readonly style="width:100%;min-height:220px;max-height:45vh;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:0.6rem;font-family:monospace;font-size:0.85rem;color:var(--ink);outline:none;resize:vertical;"></textarea>
     <div class="modal-btns" style="margin-top:1rem;">
+      <button id="master-discard-btn" style="display:none" onclick="masterDiscard()">Discard</button>
       <button id="master-edit-btn" onclick="masterToggleEdit()">Edit</button>
       <button onclick="masterCopy()">Copy</button>
       <button class="ok" onclick="masterClose()">Done</button>
@@ -2137,6 +2138,8 @@ function habitScheduledOn(h, dateStr) {
   const created = new Date(new Date(h.created_at).getTime() - 4*3600*1000);
   const createdStr = created.getFullYear()+'-'+String(created.getMonth()+1).padStart(2,'0')+'-'+String(created.getDate()).padStart(2,'0');
   if (dateStr < createdStr) return false;
+  // Current schedule config only applies from the day it was set — past days keep their lived record
+  if (h.schedule_from && dateStr < h.schedule_from) return false;
   if (h.days === 'ALL') return true;
   return h.days.split(',').includes(DAY_ABBR[dateStrToDate(dateStr).getDay()]);
 }
@@ -2166,9 +2169,9 @@ async function renderHabits() {
   let html = '';
   ['AM','DAY','PM'].forEach(period => {
     const scheduled = habits.filter(h => h.period === period && habitScheduledOn(h, dateStr));
-    // include archived habits that have an entry this date
-    const archivedWithEntry = habits.filter(h => h.period === period && h.archived && entries[h.id]);
-    const list = [...scheduled, ...archivedWithEntry];
+    // also show any habit with an entry this date (archived, or schedule since changed) — the lived record stays visible
+    const withEntry = habits.filter(h => h.period === period && entries[h.id] && !scheduled.includes(h));
+    const list = [...scheduled, ...withEntry];
     html += `<div class="habits-section-label">${period}</div>`;
     if (!list.length) { html += '<div class="habits-empty">Nothing scheduled.</div>'; return; }
     list.forEach(h => {
@@ -2275,19 +2278,33 @@ async function saveNewHabit() {
   if (!name) { errEl.textContent = 'Name required.'; return; }
   await ensureHabitsLoaded();
   const dup = habits.find(h => h.name.toLowerCase() === name.toLowerCase() && h.id !== hmodalEditId);
-  if (dup) { errEl.textContent = 'A habit with this name already exists.'; return; }
   if (!hmodalPeriod) { errEl.textContent = 'Pick a period.'; return; }
+  const days0 = hmodalDays.has('ALL') ? 'ALL' : Array.from(hmodalDays).join(',');
+  if (dup && dup.archived && !hmodalEditId) {
+    // Revive the archived habit with the new settings — history preserved, limbo closed
+    await api('PATCH', `habits?id=eq.${dup.id}`, { archived: false, period: hmodalPeriod, days: days0, schedule_from: habitTodayStr() });
+    dup.archived = false; dup.period = hmodalPeriod; dup.days = days0; dup.schedule_from = habitTodayStr();
+    masterAppendName(dup.name);
+    closeHabitModal();
+    renderHabits();
+    toast('Habit restored with new settings');
+    return;
+  }
+  if (dup) { errEl.textContent = 'A habit with this name already exists.'; return; }
   const days = hmodalDays.has('ALL') ? 'ALL' : Array.from(hmodalDays).join(',');
   if (hmodalEditId) {
     const h = habits.find(x => x.id === hmodalEditId);
     const nameChanged = h && h.name !== name;
-    await api('PATCH', `habits?id=eq.${hmodalEditId}`, { name, period: hmodalPeriod, days });
+    const scheduleChanged = h && (h.period !== hmodalPeriod || h.days !== days);
+    const patch = { name, period: hmodalPeriod, days };
+    if (scheduleChanged) patch.schedule_from = habitTodayStr();
+    await api('PATCH', `habits?id=eq.${hmodalEditId}`, patch);
     if (nameChanged) {
       // Keep sheet counts unified under one name: rename all past entries too
       await api('PATCH', `habit_entries?habit_id=eq.${hmodalEditId}`, { habit_name: name });
       masterRenameName(h.name, name);
     }
-    if (h) { h.name = name; h.period = hmodalPeriod; h.days = days; }
+    if (h) { h.name = name; h.period = hmodalPeriod; h.days = days; if (scheduleChanged) h.schedule_from = habitTodayStr(); }
     closeHabitModal();
     renderHabitsManage();
     toast('Habit updated');
@@ -2378,20 +2395,36 @@ async function openMasterList() {
   ta.value = await loadMasterList();
 }
 
+let masterOriginal = '';
+
 function masterToggleEdit() {
   const ta = document.getElementById('master-textarea');
   const btn = document.getElementById('master-edit-btn');
+  const discardBtn = document.getElementById('master-discard-btn');
   if (!masterEditing) {
     masterEditing = true;
+    masterOriginal = ta.value;
     ta.readOnly = false;
     ta.focus();
     btn.textContent = 'Save';
+    discardBtn.style.display = '';
   } else {
     masterEditing = false;
     ta.readOnly = true;
     btn.textContent = 'Edit';
+    discardBtn.style.display = 'none';
     saveMasterList(ta.value.split('\n').map(x => x.trim()).filter(Boolean).join('\n')).then(() => toast('Master list saved'));
   }
+}
+
+function masterDiscard() {
+  const ta = document.getElementById('master-textarea');
+  ta.value = masterOriginal;
+  masterEditing = false;
+  ta.readOnly = true;
+  document.getElementById('master-edit-btn').textContent = 'Edit';
+  document.getElementById('master-discard-btn').style.display = 'none';
+  toast('Changes discarded');
 }
 
 function masterCopy() {
@@ -2402,7 +2435,7 @@ function masterCopy() {
 }
 
 function masterClose() {
-  if (masterEditing) { toast('Save or discard your edit first'); return; }
+  if (masterEditing) { toast('Hit Save or Discard first'); return; }
   document.getElementById('master-modal').classList.remove('open');
 }
 
