@@ -345,6 +345,12 @@
   .j-loc::placeholder, .j-title::placeholder { color: var(--ink-faint); font-weight: 400; }
   .journal-entry-body { width: 100%; min-height: 220px; border: none; background: transparent; outline: none; resize: vertical; font-family: 'DM Sans', sans-serif; font-weight: 400; font-size: 11pt; color: var(--ink); line-height: 1.6; }
   .journal-entry-body::placeholder { color: var(--ink-faint); font-style: italic; }
+  .journal-sections { margin-top: 1rem; }
+  .j-sec-label { font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 11pt; color: var(--ink); margin: 0.9rem 0 0.25rem; }
+  .j-sec-box { width: 100%; min-height: 2.4em; border: none; border-bottom: 1px dashed var(--ink-faint); background: transparent; outline: none; resize: none; overflow: hidden; font-family: 'DM Sans', sans-serif; font-weight: 400; font-size: 11pt; color: var(--ink); line-height: 1.5; padding: 0.2rem 0.3rem; border-radius: 4px 4px 0 0; transition: background 0.15s; }
+  .j-sec-box.unsaved { background: var(--unsaved); }
+  .j-sec-box::placeholder { color: var(--ink-faint); font-style: italic; }
+
   .journal-entry-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
   .journal-btn { font-family: 'DM Sans', sans-serif; font-size: 0.92rem; padding: 0.5rem 1.2rem; border: 1px solid var(--ink); border-radius: 4px; background: var(--ink); color: var(--paper); cursor: pointer; transition: all 0.15s; }
   .journal-btn:hover { opacity: 0.85; }
@@ -449,6 +455,7 @@
         <input class="j-title" id="journal-title" placeholder="Title" oninput="uppercaseField(this);onJournalFieldInput()" />
       </div>
       <textarea id="journal-body" class="journal-entry-body" placeholder="Write your entry…" oninput="onJournalFieldInput()"></textarea>
+      <div class="journal-sections" id="journal-sections"></div>
       <div class="journal-entry-actions">
         <button class="journal-btn secondary" onclick="showView('journalpage')">Journal</button>
         <button class="journal-btn" onclick="submitJournalEntry()">Submit</button>
@@ -563,6 +570,9 @@
       <button class="journal-back-btn" onclick="showView('habits-legacy')">← Back</button>
       <div class="journal-page-title">Habits Legacy</div>
       <div style="width:64px"></div>
+    </div>
+    <div class="journal-page-topbar" style="justify-content:flex-end;gap:0.6rem;margin-top:-0.75rem;">
+      <button class="task-action-btn" onclick="habitsArchiveCopy()">Copy All</button>
     </div>
     <div class="paper tl-paper">
       <div id="habits-archive-content" style="font-family:monospace;font-size:0.8rem;color:var(--ink-light);white-space:pre;overflow-x:auto;"></div>
@@ -1722,13 +1732,49 @@ function onJournalFieldInput() {
   draftSaveTimer = setTimeout(saveDraft, 800);
 }
 
+const JOURNAL_SECTIONS = ['MIND','BODY','SPIRIT','RELATIONSHIPS','BUSINESS','PLAY','GRATITUDE'];
+
+function renderJournalSections() {
+  const wrap = document.getElementById('journal-sections');
+  if (!wrap) return;
+  const shuffled = [...JOURNAL_SECTIONS].sort(() => Math.random() - 0.5);
+  wrap.innerHTML = shuffled.map(s => `
+    <div class="j-sec-label">${s}</div>
+    <textarea class="j-sec-box" id="jsec-${s}" placeholder="…" rows="1"
+      oninput="jsecInput(this);onJournalFieldInput()"></textarea>
+  `).join('');
+}
+
+function jsecInput(el) {
+  el.classList.toggle('unsaved', el.value.trim().length > 0);
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function getSectionValues() {
+  const out = {};
+  JOURNAL_SECTIONS.forEach(s => {
+    const el = document.getElementById('jsec-' + s);
+    out[s] = el ? el.value : '';
+  });
+  return out;
+}
+
+function setSectionValues(vals) {
+  JOURNAL_SECTIONS.forEach(s => {
+    const el = document.getElementById('jsec-' + s);
+    if (el) { el.value = (vals && vals[s]) || ''; jsecInput(el); }
+  });
+}
+
 async function saveDraft() {
   if (!journalRowId) return;
   const draft = JSON.stringify({
     ts: journalFrozenTs,
     loc: document.getElementById('journal-location').value,
     title: document.getElementById('journal-title').value,
-    body: document.getElementById('journal-body').value
+    body: document.getElementById('journal-body').value,
+    secs: getSectionValues()
   });
   await api('PATCH', `journal_data?id=eq.${journalRowId}`, { draft });
 }
@@ -1737,10 +1783,12 @@ function restoreDraft(draftStr) {
   if (!draftStr) return;
   try {
     const d = JSON.parse(draftStr);
-    if (d.body || d.loc || d.title) {
+    const hasSecs = d.secs && Object.values(d.secs).some(v => v && v.trim());
+    if (d.body || d.loc || d.title || hasSecs) {
       document.getElementById('journal-location').value = d.loc || '';
       document.getElementById('journal-title').value = d.title || '';
       document.getElementById('journal-body').value = d.body || '';
+      setSectionValues(d.secs);
       if (d.ts) {
         journalFrozenTs = d.ts;
         const el = document.getElementById('journal-ts');
@@ -1814,12 +1862,19 @@ async function submitJournalEntry() {
   const loc = document.getElementById('journal-location').value.trim();
   const title = document.getElementById('journal-title').value.trim();
   const body = document.getElementById('journal-body').value;
+  const secs = getSectionValues();
+  const filledSecs = JOURNAL_SECTIONS.filter(s => secs[s] && secs[s].trim());
 
-  if (!body.trim() && !title && !loc) { toast('Nothing to save'); return; }
+  if (!body.trim() && !title && !loc && !filledSecs.length) { toast('Nothing to save'); return; }
 
   const headerText = `${ts}\t${loc}\t${title}`;
-  // Use <b> so bold survives paste into Google Docs; convert newlines to <br> for line breaks
-  const bodyHtml = '<br>' + escHtml(body).replace(/\n/g, '<br>');
+  // Body: freewrite first, then filled sections in canonical order with bold headers
+  const parts = [];
+  if (body.trim()) parts.push(escHtml(body).replace(/\n/g, '<br>'));
+  filledSecs.forEach(s => {
+    parts.push('<b>' + s + '</b><br>' + escHtml(secs[s].trim()).replace(/\n/g, '<br>'));
+  });
+  const bodyHtml = '<br>' + parts.join('<br><br>');
   const entryHtml = `<div class="j-entry"><div class="j-entry-header"><b>${escHtml(headerText)}</b></div><div class="j-entry-body">${bodyHtml}</div><br></div>`;
 
   const journalEl = document.getElementById('journal-page-content');
@@ -1836,14 +1891,18 @@ async function submitJournalEntry() {
     // Revert on-screen state since nothing persisted; composer keeps the text, draft is still saved
     journalEl.innerHTML = prevJournal;
     legacyEl.innerHTML = prevLegacy;
+    const failParts = ['HEADER:\n' + headerText];
+    if (body.trim()) failParts.push('FREEWRITE:\n' + body);
+    filledSecs.forEach(s => failParts.push(s + ':\n' + secs[s]));
     showFailModal('Journal entry failed to save. Your entry is shown below — copy it before closing. Your text is also still in the composer.',
-      'HEADER:\n' + headerText + '\n\nBODY:\n' + body);
+      failParts.join('\n\n'));
     return;
   }
 
   document.getElementById('journal-location').value = '';
   document.getElementById('journal-title').value = '';
   document.getElementById('journal-body').value = '';
+  renderJournalSections(); // clears all boxes and reshuffles order
   journalFrozenTs = null;
   clearTimeout(draftSaveTimer);
   await api('PATCH', `journal_data?id=eq.${journalRowId}`, { draft: '' });
@@ -2412,6 +2471,13 @@ async function renderHabitsArchive() {
   }).join('\n');
 }
 
+function habitsArchiveCopy() {
+  const t = document.getElementById('habits-archive-content').textContent;
+  if (!t || t === 'Nothing exported yet.' || t === 'Loading…') { toast('Nothing to copy'); return; }
+  navigator.clipboard && navigator.clipboard.writeText(t);
+  toast('Copied with tabs intact');
+}
+
 function habitsLegacyMarkExported() {
   const confirmed = window.confirm('Mark all shown rows as exported? They will no longer appear here (data is kept).');
   if (!confirmed) return;
@@ -2421,6 +2487,8 @@ function habitsLegacyMarkExported() {
     toast('Marked exported');
   });
 }
+
+renderJournalSections();
 
 loadSession().then(ok => {
   if (ok) {
