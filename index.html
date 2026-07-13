@@ -294,6 +294,10 @@
   .habit-del { font-family: 'DM Sans', sans-serif; font-size: 0.75rem; color: var(--ink-faint); background: none; border: 1px solid transparent; border-radius: 4px; padding: 2px 7px; cursor: pointer; transition: all 0.15s; }
   .habit-del:hover { color: var(--red); border-color: var(--red); }
   .habits-empty { font-family: 'DM Sans', sans-serif; font-style: italic; font-size: 0.95rem; color: var(--ink-faint); padding: 0.5rem 0.25rem 0.75rem; }
+  .habit-daynote { width: 100%; min-height: 3.2em; border: 1px dashed var(--ink-faint); border-radius: 4px; background: transparent; outline: none; resize: vertical; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: var(--ink); line-height: 1.5; padding: 0.5rem 0.6rem; margin-top: 0.35rem; transition: all 0.15s; }
+  .habit-daynote:focus { border-color: #f0c040; background: var(--unsaved); }
+  .habit-daynote:disabled { opacity: 0.35; cursor: not-allowed; }
+  .habit-daynote::placeholder { color: var(--ink-faint); font-style: italic; }
   /* habit modal */
   .hmodal-field { margin-bottom: 1.1rem; }
   .hmodal-label { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.45rem; }
@@ -2187,7 +2191,44 @@ async function renderHabits() {
       </div>`;
     });
   });
+  html += `<div class="habits-section-label">DAY NOTES</div>
+    <textarea class="habit-daynote" id="habit-daynote" placeholder="What happened today — context, why something slipped…"
+      ${isFuture ? 'disabled' : ''} oninput="onDayNoteInput()"></textarea>`;
   el.innerHTML = html;
+  const noteRow = await loadDayNote(dateStr);
+  const noteEl = document.getElementById('habit-daynote');
+  if (noteEl && habitsViewDate === dateStr) noteEl.value = noteRow ? (noteRow.note || '') : '';
+}
+
+// ---- day notes ----
+let dayNotesCache = {}; // date -> row {id, note, exported} or null
+let dayNoteSaveTimer = null;
+
+async function loadDayNote(dateStr) {
+  if (dateStr in dayNotesCache) return dayNotesCache[dateStr];
+  const rows = await api('GET', `habit_day_notes?habit_date=eq.${dateStr}`) || [];
+  dayNotesCache[dateStr] = rows[0] || null;
+  return dayNotesCache[dateStr];
+}
+
+function onDayNoteInput() {
+  clearTimeout(dayNoteSaveTimer);
+  dayNoteSaveTimer = setTimeout(saveDayNote, 800);
+}
+
+async function saveDayNote() {
+  const dateStr = habitsViewDate;
+  const el = document.getElementById('habit-daynote');
+  if (!el || el.disabled) return;
+  const note = el.value;
+  const existing = dayNotesCache[dateStr];
+  if (existing && existing.id) {
+    existing.note = note;
+    await api('PATCH', `habit_day_notes?id=eq.${existing.id}`, { note });
+  } else {
+    const res = await api('POST', 'habit_day_notes', { habit_date: dateStr, note });
+    if (res && res[0]) dayNotesCache[dateStr] = res[0];
+  }
 }
 
 async function setHabitResult(habitId, clicked) {
@@ -2464,22 +2505,45 @@ async function habitsBackfill() {
 // ---- habits legacy ----
 const PERIOD_ORDER = { AM: 0, DAY: 1, PM: 2 };
 
+function habitLine(r) {
+  const d = dateStrToDate(r.habit_date);
+  const dateFmt = (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2);
+  return dateFmt+'\t'+DAY_ABBR[d.getDay()]+'\t'+r.period+'\t'+r.habit_name+'\t'+(r.result || 'UNANSWERED');
+}
+
+function noteLine(n) {
+  const d = dateStrToDate(n.habit_date);
+  const dateFmt = (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2);
+  const flat = (n.note || '').replace(/\r?\n+/g, ' / ').trim();
+  return dateFmt+'\t'+DAY_ABBR[d.getDay()]+'\tNOTE\t\t\t'+flat;
+}
+
+function combineHabitAndNoteLines(entries, notes, ascending) {
+  // group by date: habit rows (AM/DAY/PM, name) then the day's note row
+  const dates = [...new Set([...entries.map(e => e.habit_date), ...notes.map(n => n.habit_date)])];
+  dates.sort();
+  if (!ascending) dates.reverse();
+  const lines = [];
+  dates.forEach(dt => {
+    const dayEntries = entries.filter(e => e.habit_date === dt)
+      .sort((a,b) => (PERIOD_ORDER[a.period]-PERIOD_ORDER[b.period]) || a.habit_name.localeCompare(b.habit_name));
+    dayEntries.forEach(e => lines.push(habitLine(e)));
+    const n = notes.find(x => x.habit_date === dt);
+    if (n && (n.note || '').trim()) lines.push(noteLine(n));
+  });
+  return lines;
+}
+
 async function renderHabitsLegacy() {
   const el = document.getElementById('habits-legacy-content');
   el.textContent = 'Loading…';
   const today = habitTodayStr();
-  const rows = await api('GET', `habit_entries?exported=eq.false&habit_date=lt.${today}&order=habit_date`) || [];
-  if (!rows.length) { el.textContent = 'Nothing to export.'; return; }
-  rows.sort((a,b) => a.habit_date === b.habit_date
-    ? (PERIOD_ORDER[a.period]-PERIOD_ORDER[b.period] || a.habit_name.localeCompare(b.habit_name))
-    : a.habit_date.localeCompare(b.habit_date));
-  const lines = rows.map(r => {
-    const d = dateStrToDate(r.habit_date);
-    const dateFmt = (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2);
-    const result = r.result || 'UNANSWERED';
-    return dateFmt+'\t'+DAY_ABBR[d.getDay()]+'\t'+r.period+'\t'+r.habit_name+'\t'+result;
-  });
-  el.textContent = lines.join('\n');
+  const [entries, notes] = await Promise.all([
+    api('GET', `habit_entries?exported=eq.false&habit_date=lt.${today}`),
+    api('GET', `habit_day_notes?exported=eq.false&habit_date=lt.${today}`)
+  ]);
+  const lines = combineHabitAndNoteLines(entries || [], notes || [], true);
+  el.textContent = lines.length ? lines.join('\n') : 'Nothing to export.';
 }
 
 function habitsLegacyCopy() {
@@ -2492,16 +2556,12 @@ function habitsLegacyCopy() {
 async function renderHabitsArchive() {
   const el = document.getElementById('habits-archive-content');
   el.textContent = 'Loading…';
-  const rows = await api('GET', 'habit_entries?exported=eq.true&order=habit_date.desc') || [];
-  if (!rows.length) { el.textContent = 'Nothing exported yet.'; return; }
-  rows.sort((a,b) => a.habit_date === b.habit_date
-    ? (PERIOD_ORDER[a.period]-PERIOD_ORDER[b.period] || a.habit_name.localeCompare(b.habit_name))
-    : b.habit_date.localeCompare(a.habit_date));
-  el.textContent = rows.map(r => {
-    const d = dateStrToDate(r.habit_date);
-    const dateFmt = (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2);
-    return dateFmt+'\t'+DAY_ABBR[d.getDay()]+'\t'+r.period+'\t'+r.habit_name+'\t'+(r.result || 'UNANSWERED');
-  }).join('\n');
+  const [entries, notes] = await Promise.all([
+    api('GET', 'habit_entries?exported=eq.true'),
+    api('GET', 'habit_day_notes?exported=eq.true')
+  ]);
+  const lines = combineHabitAndNoteLines(entries || [], notes || [], true); // oldest at top
+  el.textContent = lines.length ? lines.join('\n') : 'Nothing exported yet.';
 }
 
 function habitsArchiveCopy() {
@@ -2515,7 +2575,10 @@ function habitsLegacyMarkExported() {
   const confirmed = window.confirm('Mark all shown rows as exported? They will no longer appear here (data is kept).');
   if (!confirmed) return;
   const today = habitTodayStr();
-  api('PATCH', `habit_entries?exported=eq.false&habit_date=lt.${today}`, { exported: true }).then(() => {
+  Promise.all([
+    api('PATCH', `habit_entries?exported=eq.false&habit_date=lt.${today}`, { exported: true }),
+    api('PATCH', `habit_day_notes?exported=eq.false&habit_date=lt.${today}`, { exported: true })
+  ]).then(() => {
     renderHabitsLegacy();
     toast('Marked exported');
   });
