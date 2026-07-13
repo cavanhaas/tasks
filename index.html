@@ -69,6 +69,15 @@
   .topbar-right { display: flex; gap: 1.25rem; align-items: center; }
   .sub-nav { display: none; justify-content: flex-end; gap: 1.25rem; align-items: center; margin: -1.25rem 0 1rem; padding: 0.25rem 0; }
   .sub-nav.visible { display: flex; }
+  .undo-btn { display: none; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-light); background: none; border: 1px solid var(--line); border-radius: 4px; padding: 0.25rem 0.7rem; cursor: pointer; transition: all 0.15s; margin: 0.35rem 0 0.5rem; }
+  .undo-btn.available { display: inline-block; }
+  .undo-btn:hover { border-color: #f0c040; color: #f0c040; }
+  .today-drag-handle { width: 1.4rem; align-self: stretch; cursor: grab; flex-shrink: 0; }
+  .today-drag-handle:active { cursor: grabbing; }
+  .today-item { position: relative; }
+  .today-item.drag-over-top::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--blue); z-index: 10; }
+  .today-item.drag-over-bottom::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--blue); z-index: 10; }
+  .today-item.dragging { opacity: 0.4; }
 
   .top-btn { font-family: 'DM Sans', sans-serif; font-size: 0.92rem; color: var(--ink-light); background: none; border: none; cursor: pointer; letter-spacing: 0.03em; padding: 0; transition: color 0.15s; }
   .top-btn:hover { color: var(--ink); }
@@ -326,6 +335,7 @@
     .task-row, .add-task-row, .task-section-label, .history-item, .history-board-label, .trash-item, .trash-board-header, .empty, .today-item, .today-board-label { margin-left: 0; }
     .subtasks { margin-left: 1rem; }
     .today-item.is-subtask { margin-left: 1rem; }
+    .task-drag-handle, .today-drag-handle { display: none; }
   }
 
   /* JOURNAL */
@@ -415,6 +425,8 @@
       <button class="top-btn" id="btn-habits" onclick="showView('habits')">Habits</button>
     </div>
   </div>
+
+  <button class="undo-btn" id="undo-btn" onclick="performUndo()" title="Undo last action (Cmd+Z)">↺ Undo</button>
 
   <div class="sub-nav" id="sub-nav">
     <button class="top-btn" id="btn-history" onclick="showView('history')">Done</button>
@@ -1127,6 +1139,13 @@ async function toggleTask(id) {
   const completed = !t.completed;
   t.completed = completed; t.completed_at = completed ? new Date().toISOString() : null;
   await api('PATCH', `tasks?id=eq.${id}`, { completed, completed_at: t.completed_at });
+  if (completed) {
+    setUndo('task completed', async () => {
+      t.completed = false; t.completed_at = null;
+      await api('PATCH', `tasks?id=eq.${id}`, { completed: false, completed_at: null });
+      if (currentView === 'today') renderToday(); else if (currentView === 'history') renderHistory(); else renderPaper();
+    });
+  }
   renderPaper();
   if (completed) toast('Task done ✓');
 }
@@ -1139,9 +1158,20 @@ async function updateTaskTitle(id, el) {
 }
 
 async function deleteTask(id) {
+  const t = tasks.find(x => x.id === id);
   const now = new Date().toISOString();
   await api('PATCH', `tasks?id=eq.${id}`, { is_deleted: true, deleted_at: now });
   tasks = tasks.filter(x => x.id !== id);
+  if (t) {
+    setUndo('task binned', async () => {
+      await api('PATCH', `tasks?id=eq.${id}`, { is_deleted: false, deleted_at: null });
+      t.is_deleted = false; t.deleted_at = null;
+      tasks.push(t);
+      if (currentView === 'history') renderHistory();
+      else if (currentView === 'today') renderToday();
+      else renderPaper();
+    });
+  }
   if (currentView === 'history') renderHistory();
   else if (currentView === 'today') renderToday();
   else renderPaper();
@@ -1167,6 +1197,16 @@ async function toggleSubtask(id, taskId) {
   const completed = !s.completed;
   s.completed = completed; s.completed_at = completed ? new Date().toISOString() : null;
   await api('PATCH', `subtasks?id=eq.${id}`, { completed, completed_at: s.completed_at });
+  if (completed) {
+    setUndo('subtask completed', async () => {
+      s.completed = false; s.completed_at = null;
+      await api('PATCH', `subtasks?id=eq.${id}`, { completed: false, completed_at: null });
+      if (document.getElementById(`history-subtasks-${taskId}`)) renderHistorySubtasks(taskId);
+      else renderSubtasks(taskId, false);
+      if (currentView === 'today') renderToday();
+      refreshIndicator(taskId);
+    });
+  }
   if (document.getElementById(`history-subtasks-${taskId}`)) renderHistorySubtasks(taskId);
   else renderSubtasks(taskId, false);
   refreshIndicator(taskId);
@@ -1226,22 +1266,31 @@ function renderToday() {
   let html = '';
   Object.entries(byBoard).forEach(([bid, group]) => {
     const board = boards.find(b => b.id === bid);
-    html += `<div class="today-board-group"><div class="today-board-label">${board ? escHtml(board.name) : 'Unknown'}</div>`;
+    html += `<div class="today-board-group" data-board="${bid}"><div class="today-board-label">${board ? escHtml(board.name) : 'Unknown'}</div>`;
 
-    group.tasks.forEach(t => {
-      html += `
-        <div class="today-item">
+    // Combined, ordered list: tasks and subtasks interleave by saved today_position
+    const items = [
+      ...group.tasks.map(t => ({ kind: 'task', id: t.id, obj: t })),
+      ...group.subs.map(({ sub, parent }) => ({ kind: 'subtask', id: sub.id, obj: sub, parent }))
+    ].sort((a, b) => (a.obj.today_position ?? 99999) - (b.obj.today_position ?? 99999));
+
+    items.forEach(it => {
+      if (it.kind === 'task') {
+        const t = it.obj;
+        html += `
+        <div class="today-item" data-kind="task" data-id="${t.id}">
+          <div class="today-drag-handle"></div>
           <div class="today-complete-cb${t.completed ? ' checked' : ''}" onclick="toggleTask('${t.id}');setTimeout(renderToday,150)"></div>
           <div style="flex:1">
             <div class="today-title${t.completed ? ' done' : ''}">${escHtml(t.title)}</div>
           </div>
           <div class="today-cb checked" title="Remove from Do Today" onclick="removeFromToday('task','${t.id}')"></div>
         </div>`;
-    });
-
-    group.subs.forEach(({ sub, parent }) => {
-      html += `
-        <div class="today-item is-subtask">
+      } else {
+        const sub = it.obj, parent = it.parent;
+        html += `
+        <div class="today-item is-subtask" data-kind="subtask" data-id="${sub.id}">
+          <div class="today-drag-handle"></div>
           <div class="today-complete-cb${sub.completed ? ' checked' : ''}" onclick="toggleSubtaskComplete('${sub.id}')"></div>
           <div style="flex:1">
             <div class="today-context">Subtask of: ${parent ? escHtml(parent.title) : 'Unknown task'}</div>
@@ -1249,12 +1298,83 @@ function renderToday() {
           </div>
           <div class="today-cb checked" title="Remove from Do Today" onclick="removeFromToday('subtask','${sub.id}')"></div>
         </div>`;
+      }
     });
 
     html += `</div>`;
   });
 
   el.innerHTML = html;
+  setTimeout(setupTodayDrag, 0);
+}
+
+function setupTodayDrag() {
+  document.querySelectorAll('#today-content .today-item').forEach(item => {
+    const handle = item.querySelector('.today-drag-handle');
+    if (!handle) return;
+    handle.addEventListener('mousedown', () => { item.draggable = true; });
+    handle.addEventListener('mouseup', () => { item.draggable = false; });
+
+    item.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('todayKey', item.dataset.kind + ':' + item.dataset.id);
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => item.classList.add('dragging'), 0);
+    });
+    item.addEventListener('dragend', () => {
+      item.draggable = false;
+      item.classList.remove('dragging');
+      document.querySelectorAll('.today-item').forEach(i => i.classList.remove('drag-over-top','drag-over-bottom'));
+    });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      document.querySelectorAll('.today-item').forEach(i => i.classList.remove('drag-over-top','drag-over-bottom'));
+      const rect = item.getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height/2) item.classList.add('drag-over-top');
+      else item.classList.add('drag-over-bottom');
+    });
+    item.addEventListener('dragleave', e => {
+      if (!item.contains(e.relatedTarget)) item.classList.remove('drag-over-top','drag-over-bottom');
+    });
+    item.addEventListener('drop', async e => {
+      e.preventDefault();
+      const key = e.dataTransfer.getData('todayKey');
+      item.classList.remove('drag-over-top','drag-over-bottom');
+      if (!key) return;
+      const [kind, id] = key.split(':');
+      const targetKind = item.dataset.kind, targetId = item.dataset.id;
+      if (kind === targetKind && id === targetId) return;
+      // Same board group only
+      const srcGroup = document.querySelector(`.today-item[data-kind="${kind}"][data-id="${id}"]`)?.closest('.today-board-group');
+      const dstGroup = item.closest('.today-board-group');
+      if (!srcGroup || srcGroup !== dstGroup) { toast('Reorder within a board group'); return; }
+
+      const rect = item.getBoundingClientRect();
+      const insertBefore = e.clientY < rect.top + rect.height/2;
+
+      // Current DOM order of this group's items
+      const domItems = [...dstGroup.querySelectorAll('.today-item')].map(el => ({ kind: el.dataset.kind, id: el.dataset.id }));
+      const fromIdx = domItems.findIndex(x => x.kind === kind && x.id === id);
+      let toIdx = domItems.findIndex(x => x.kind === targetKind && x.id === targetId);
+      const [moved] = domItems.splice(fromIdx, 1);
+      toIdx = domItems.findIndex(x => x.kind === targetKind && x.id === targetId);
+      const insertAt = insertBefore ? toIdx : toIdx + 1;
+      domItems.splice(insertAt, 0, moved);
+
+      // Persist sequential today_position; update local objects
+      const patches = [];
+      domItems.forEach((x, i) => {
+        if (x.kind === 'task') {
+          const t = tasks.find(t => t.id === x.id);
+          if (t && t.today_position !== i) { t.today_position = i; patches.push(api('PATCH', `tasks?id=eq.${x.id}`, { today_position: i })); }
+        } else {
+          const s = subtasks.find(s => s.id === x.id);
+          if (s && s.today_position !== i) { s.today_position = i; patches.push(api('PATCH', `subtasks?id=eq.${x.id}`, { today_position: i })); }
+        }
+      });
+      renderToday();
+      await Promise.all(patches);
+    });
+  });
 }
 
 async function toggleSubtaskComplete(id) {
@@ -1263,6 +1383,13 @@ async function toggleSubtaskComplete(id) {
   const completed = !s.completed;
   s.completed = completed; s.completed_at = completed ? new Date().toISOString() : null;
   await api('PATCH', `subtasks?id=eq.${id}`, { completed, completed_at: s.completed_at });
+  if (completed) {
+    setUndo('subtask completed', async () => {
+      s.completed = false; s.completed_at = null;
+      await api('PATCH', `subtasks?id=eq.${id}`, { completed: false, completed_at: null });
+      if (currentView === 'today') renderToday(); else renderPaper();
+    });
+  }
   renderToday();
 }
 
@@ -1292,12 +1419,19 @@ function todayBoundary4AM() {
   return b;
 }
 
+function weekBoundaryMon4AM() {
+  const b = todayBoundary4AM();
+  const sinceMon = (b.getDay() + 6) % 7; // Mon=0 … Sun=6
+  b.setDate(b.getDate() - sinceMon);
+  return b;
+}
+
 function filterDoneTasks() {
   const now = new Date();
   return tasks.filter(t => t.completed && t.completed_at).filter(t => {
     const d = new Date(t.completed_at);
     if (histFilter === 'day') return d >= todayBoundary4AM();
-    if (histFilter === 'week') { const ago = new Date(now); ago.setDate(now.getDate()-7); return d >= ago; }
+    if (histFilter === 'week') return d >= weekBoundaryMon4AM();
     if (histFilter === 'month') { const ago = new Date(now); ago.setMonth(now.getMonth()-1); return d >= ago; }
     return true;
   }).sort((a,b) => new Date(b.completed_at) - new Date(a.completed_at));
@@ -1311,7 +1445,7 @@ function renderHistory() {
     if (!iso) return false;
     const d = new Date(iso);
     if (histFilter === 'day') return d >= todayBoundary4AM();
-    if (histFilter === 'week') { const ago = new Date(now); ago.setDate(now.getDate()-7); return d >= ago; }
+    if (histFilter === 'week') return d >= weekBoundaryMon4AM();
     if (histFilter === 'month') { const ago = new Date(now); ago.setMonth(now.getMonth()-1); return d >= ago; }
     return true;
   };
@@ -1907,7 +2041,37 @@ async function submitJournalEntry() {
   document.getElementById('journal-location').value = '';
   document.getElementById('journal-title').value = '';
   document.getElementById('journal-body').value = '';
-  renderJournalSections(); // clears all boxes and reshuffles order
+  
+// ================= UNDO =================
+let lastUndo = null; // { label, fn }
+
+function setUndo(label, fn) {
+  lastUndo = { label, fn };
+  const btn = document.getElementById('undo-btn');
+  if (btn) { btn.classList.add('available'); btn.title = 'Undo: ' + label + ' (Cmd+Z)'; }
+}
+
+async function performUndo() {
+  if (!lastUndo) return;
+  const u = lastUndo;
+  lastUndo = null;
+  const btn = document.getElementById('undo-btn');
+  if (btn) btn.classList.remove('available');
+  await u.fn();
+  toast('Undone: ' + u.label);
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (!lastUndo) return;
+    e.preventDefault();
+    performUndo();
+  }
+});
+
+renderJournalSections(); // clears all boxes and reshuffles order
   journalFrozenTs = null;
   clearTimeout(draftSaveTimer);
   await api('PATCH', `journal_data?id=eq.${journalRowId}`, { draft: '' });
@@ -2241,12 +2405,27 @@ async function setHabitResult(habitId, clicked) {
   if (existing) {
     existing.result = next;
     await api('PATCH', `habit_entries?id=eq.${existing.id}`, { result: next });
+    const entryId = existing.id;
+    setUndo('habit ' + (next || 'cleared'), async () => {
+      existing.result = current;
+      await api('PATCH', `habit_entries?id=eq.${entryId}`, { result: current });
+      if (currentView === 'habits') renderHabits();
+    });
   } else {
     const res = await api('POST', 'habit_entries', {
       habit_id: habitId, habit_name: h ? h.name : '', period: h ? h.period : '',
       habit_date: dateStr, result: next
     });
-    if (res && res[0]) entries[habitId] = res[0];
+    if (res && res[0]) {
+      entries[habitId] = res[0];
+      const entryId = res[0].id;
+      const entryRef = res[0];
+      setUndo('habit ' + (next || 'cleared'), async () => {
+        entryRef.result = '';
+        await api('PATCH', `habit_entries?id=eq.${entryId}`, { result: '' });
+        if (currentView === 'habits') renderHabits();
+      });
+    }
     habitEntriesCache[dateStr] = entries;
   }
   renderHabits();
@@ -2583,6 +2762,36 @@ function habitsLegacyMarkExported() {
     toast('Marked exported');
   });
 }
+
+
+// ================= UNDO =================
+let lastUndo = null; // { label, fn }
+
+function setUndo(label, fn) {
+  lastUndo = { label, fn };
+  const btn = document.getElementById('undo-btn');
+  if (btn) { btn.classList.add('available'); btn.title = 'Undo: ' + label + ' (Cmd+Z)'; }
+}
+
+async function performUndo() {
+  if (!lastUndo) return;
+  const u = lastUndo;
+  lastUndo = null;
+  const btn = document.getElementById('undo-btn');
+  if (btn) btn.classList.remove('available');
+  await u.fn();
+  toast('Undone: ' + u.label);
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (!lastUndo) return;
+    e.preventDefault();
+    performUndo();
+  }
+});
 
 renderJournalSections();
 
