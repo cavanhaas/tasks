@@ -294,6 +294,8 @@
   .math-key.submit { background: #1e7a3c; border-color: #1e7a3c; color: #fff; }
   .math-key.back { font-size: 1.2rem; }
   .math-stats { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--ink-faint); text-align: center; margin-bottom: 1rem; }
+  .math-countdown { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: var(--ink-faint); text-align: center; margin: -0.9rem 0 0.9rem; }
+  .math-countdown.low { color: var(--red); font-weight: 700; }
   .math-start-btn, .math-end-btn { display: block; margin: 0 auto; font-family: 'DM Sans', sans-serif; font-size: 1rem; padding: 0.7rem 2.2rem; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--ink); cursor: pointer; transition: all 0.15s; }
   .math-start-btn:hover, .math-end-btn:hover { border-color: #f0c040; color: #f0c040; }
   .math-summary { font-family: 'DM Sans', sans-serif; font-size: 1rem; color: var(--ink); text-align: center; line-height: 1.9; margin-bottom: 1.25rem; }
@@ -530,11 +532,13 @@
       <div id="math-idle">
         <div class="math-stats" id="math-levels-line">Loading levels…</div>
         <button class="math-start-btn" onclick="mathStart()">Start</button>
+        <button class="math-end-btn" style="margin-top:0.75rem" onclick="showView('math-log')">Log</button>
       </div>
       <div id="math-run" style="display:none">
         <div class="math-timer" id="math-timer">0:00</div>
         <div class="math-problem" id="math-problem"></div>
         <div class="math-answer" id="math-answer">&nbsp;</div>
+        <div class="math-countdown" id="math-countdown"></div>
         <div class="math-pad">
           <button class="math-key" onclick="mathKey('7')">7</button>
           <button class="math-key" onclick="mathKey('8')">8</button>
@@ -556,6 +560,20 @@
         <div class="math-summary" id="math-summary"></div>
         <button class="math-start-btn" onclick="mathBackToIdle()">Done</button>
       </div>
+    </div>
+  </div>
+
+  <div id="math-log-view" style="display:none">
+    <div class="journal-page-topbar">
+      <button class="journal-back-btn" onclick="showView('math')">← Back</button>
+      <div class="journal-page-title">Math Log</div>
+      <div style="width:64px"></div>
+    </div>
+    <div class="journal-page-topbar" style="justify-content:flex-end;gap:0.6rem;margin-top:-0.75rem;">
+      <button class="task-action-btn" onclick="mathLogCopy()">Copy All</button>
+    </div>
+    <div class="paper tl-paper">
+      <div id="math-log-content" style="font-family:monospace;font-size:0.75rem;color:var(--ink-light);white-space:pre;overflow-x:auto;"></div>
     </div>
   </div>
 
@@ -671,6 +689,17 @@
     <div class="modal-btns">
       <button onclick="closeModal()">Cancel</button>
       <button class="ok" id="modal-ok" onclick="modalConfirm()">Add</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="math-continue-modal">
+  <div class="modal" style="text-align:center;">
+    <h3>2:00 — nice work</h3>
+    <p style="font-family:'DM Sans',sans-serif;font-size:0.95rem;color:var(--ink-light);margin-bottom:1.25rem;">Keep going or end the session?</p>
+    <div class="modal-btns" style="justify-content:center;">
+      <button onclick="mathContinueFromPrompt(false)">End session</button>
+      <button class="ok" onclick="mathContinueFromPrompt(true)">Keep going</button>
     </div>
   </div>
 </div>
@@ -964,7 +993,7 @@ async function loadAll() {
   }
 }
 
-const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view', timelog: 'timelog-view', 'timelog-legacy': 'timelog-legacy-view', habits: 'habits-view', 'habits-legacy': 'habits-legacy-view', 'habits-manage': 'habits-manage-view', 'habits-archive': 'habits-archive-view', math: 'math-view' };
+const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view', timelog: 'timelog-view', 'timelog-legacy': 'timelog-legacy-view', habits: 'habits-view', 'habits-legacy': 'habits-legacy-view', 'habits-manage': 'habits-manage-view', 'habits-archive': 'habits-archive-view', math: 'math-view', 'math-log': 'math-log-view' };
 
 function showView(v) {
   currentView = v;
@@ -1004,7 +1033,8 @@ function showView(v) {
   if (v === 'habits-manage') renderHabitsManage();
   if (v === 'habits-archive') renderHabitsArchive();
   if (v === 'math') mathOpenView();
-  document.getElementById('brain-icon-btn')?.classList.toggle('active', v === 'math');
+  if (v === 'math-log') renderMathLog();
+  document.getElementById('brain-icon-btn')?.classList.toggle('active', v === 'math' || v === 'math-log');
   if (v === 'timelog' && !tlInT) setTimeout(() => document.getElementById('tl-cat')?.focus(), 100);
 }
 
@@ -2101,188 +2131,7 @@ async function submitJournalEntry() {
   document.getElementById('journal-body').value = '';
   
 
-// ================= MATH TRAINER =================
-let mathLevels = { add: 1, sub: 1, mul: 1, div: 1 };
-let mathLevelsRowId = null;
-let mathRunning = false;
-let mathStartTime = null;
-let mathTick = null;
-let mathCurrent = null; // {a,b,op,answer,label}
-let mathInput = '';
-let mathAnswered = 0, mathCorrect = 0;
-let mathStreaks = { add:{r:0,w:0}, sub:{r:0,w:0}, mul:{r:0,w:0}, div:{r:0,w:0} };
-let mathLocked = false;
-
-const MATH_OPS = ['add','sub','mul','div'];
-const MATH_SYM = { add:'+', sub:'−', mul:'×', div:'÷' };
-const ADD_MAX = [9,20,50,99,200,500,999,2000,5000,9999];
-const MUL_MAX = [5,9,12,15,20,25,40,60,80,99];
-
-function mri(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
-
-async function mathLoadLevels() {
-  if (mathLevelsRowId) return;
-  const rows = await api('GET', 'math_levels?select=*&limit=1');
-  if (rows && rows[0]) {
-    mathLevelsRowId = rows[0].id;
-    try { const p = JSON.parse(rows[0].levels); MATH_OPS.forEach(o => { if (p[o]) mathLevels[o] = p[o]; }); } catch(e){}
-  }
-}
-
-async function mathSaveLevels() {
-  if (!mathLevelsRowId) return;
-  await api('PATCH', `math_levels?id=eq.${mathLevelsRowId}`, { levels: JSON.stringify(mathLevels) });
-}
-
-function mathLevelsLineText() {
-  return `Levels — ADD ${mathLevels.add} · SUB ${mathLevels.sub} · MUL ${mathLevels.mul} · DIV ${mathLevels.div}`;
-}
-
-async function mathOpenView() {
-  await mathLoadLevels();
-  const line = document.getElementById('math-levels-line');
-  if (line) line.textContent = mathLevelsLineText();
-}
-
-function mathNewProblem() {
-  const op = MATH_OPS[mri(0, 3)];
-  const L = mathLevels[op];
-  let a, b, answer;
-  if (op === 'add') { a = mri(2, ADD_MAX[L-1]); b = mri(2, ADD_MAX[L-1]); answer = a + b; }
-  else if (op === 'sub') { a = mri(2, ADD_MAX[L-1]); b = mri(2, a); answer = a - b; }
-  else if (op === 'mul') { a = mri(2, MUL_MAX[L-1]); b = mri(2, MUL_MAX[L-1]); answer = a * b; }
-  else { b = mri(2, MUL_MAX[L-1]); answer = mri(2, MUL_MAX[L-1]); a = b * answer; }
-  mathCurrent = { a, b, op, answer };
-  mathInput = '';
-  const p = document.getElementById('math-problem');
-  p.textContent = `${a} ${MATH_SYM[op]} ${b}`;
-  p.classList.remove('flash-right','flash-wrong');
-  document.getElementById('math-answer').innerHTML = '&nbsp;';
-}
-
-function mathStart() {
-  mathRunning = true; mathLocked = false;
-  mathAnswered = 0; mathCorrect = 0;
-  mathStreaks = { add:{r:0,w:0}, sub:{r:0,w:0}, mul:{r:0,w:0}, div:{r:0,w:0} };
-  mathStartTime = Date.now();
-  document.getElementById('math-idle').style.display = 'none';
-  document.getElementById('math-done').style.display = 'none';
-  document.getElementById('math-run').style.display = 'block';
-  if (mathTick) clearInterval(mathTick);
-  mathTick = setInterval(mathTimerRefresh, 250);
-  mathTimerRefresh();
-  mathRunStats();
-  mathNewProblem();
-}
-
-function mathTimerRefresh() {
-  const s = Math.floor((Date.now() - mathStartTime) / 1000);
-  const el = document.getElementById('math-timer');
-  el.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
-  el.classList.toggle('over', s >= 120);
-}
-
-function mathRunStats() {
-  const acc = mathAnswered ? Math.round(100 * mathCorrect / mathAnswered) : 0;
-  document.getElementById('math-run-stats').textContent =
-    `${mathCorrect}/${mathAnswered} correct${mathAnswered ? ` · ${acc}%` : ''}`;
-}
-
-function mathKey(k) {
-  if (!mathRunning || mathLocked) return;
-  if (k === 'back') mathInput = mathInput.slice(0, -1);
-  else if (k === 'enter') { mathSubmit(); return; }
-  else if (mathInput.length < 7) mathInput += k;
-  document.getElementById('math-answer').textContent = mathInput || '\u00a0';
-}
-
-function mathSubmit() {
-  if (!mathCurrent || mathInput === '') return;
-  const guess = parseInt(mathInput, 10);
-  const op = mathCurrent.op;
-  const st = mathStreaks[op];
-  mathAnswered++;
-  const p = document.getElementById('math-problem');
-  let changed = false;
-  if (guess === mathCurrent.answer) {
-    mathCorrect++;
-    st.r++; st.w = 0;
-    if (st.r >= 3 && mathLevels[op] < 10) { mathLevels[op]++; st.r = 0; changed = true; }
-    p.classList.add('flash-right');
-    mathLocked = true;
-    setTimeout(() => { mathLocked = false; if (mathRunning) mathNewProblem(); }, 250);
-  } else {
-    st.w++; st.r = 0;
-    if (st.w >= 2 && mathLevels[op] > 1) { mathLevels[op]--; st.w = 0; changed = true; }
-    p.classList.add('flash-wrong');
-    p.textContent = `${mathCurrent.a} ${MATH_SYM[op]} ${mathCurrent.b} = ${mathCurrent.answer}`;
-    mathLocked = true;
-    setTimeout(() => { mathLocked = false; if (mathRunning) mathNewProblem(); }, 1100);
-  }
-  mathRunStats();
-  if (changed) mathSaveLevels();
-}
-
-function mathEnd() {
-  if (!mathRunning) return;
-  mathRunning = false;
-  if (mathTick) clearInterval(mathTick);
-  const s = Math.floor((Date.now() - mathStartTime) / 1000);
-  const acc = mathAnswered ? Math.round(100 * mathCorrect / mathAnswered) : 0;
-  document.getElementById('math-run').style.display = 'none';
-  document.getElementById('math-summary').innerHTML =
-    `Time: ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}<br>` +
-    `Answered: ${mathAnswered}<br>Correct: ${mathCorrect} (${acc}%)<br>` +
-    escHtml(mathLevelsLineText());
-  document.getElementById('math-done').style.display = 'block';
-  mathSaveLevels();
-}
-
-function mathBackToIdle() {
-  document.getElementById('math-done').style.display = 'none';
-  document.getElementById('math-idle').style.display = 'block';
-  document.getElementById('math-levels-line').textContent = mathLevelsLineText();
-}
-
-document.addEventListener('keydown', e => {
-  if (!mathRunning || currentView !== 'math') return;
-  const t = e.target;
-  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-  if (e.key >= '0' && e.key <= '9') { mathKey(e.key); e.preventDefault(); }
-  else if (e.key === 'Backspace') { mathKey('back'); e.preventDefault(); }
-  else if (e.key === 'Enter') { mathKey('enter'); e.preventDefault(); }
-});
-
-// ================= UNDO =================
-let lastUndo = null; // { label, fn }
-
-function setUndo(label, fn) {
-  lastUndo = { label, fn };
-  const btn = document.getElementById('undo-btn');
-  if (btn) { btn.classList.add('available'); btn.title = 'Undo: ' + label + ' (Cmd+Z)'; }
-}
-
-async function performUndo() {
-  if (!lastUndo) return;
-  const u = lastUndo;
-  lastUndo = null;
-  const btn = document.getElementById('undo-btn');
-  if (btn) btn.classList.remove('available');
-  await u.fn();
-  toast('Undone: ' + u.label);
-}
-
-document.addEventListener('keydown', e => {
-  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
-    const t = e.target;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-    if (!lastUndo) return;
-    e.preventDefault();
-    performUndo();
-  }
-});
-
-renderJournalSections(); // clears all boxes and reshuffles order
+  renderJournalSections(); // clears all boxes and reshuffles order
   journalFrozenTs = null;
   clearTimeout(draftSaveTimer);
   await api('PATCH', `journal_data?id=eq.${journalRowId}`, { draft: '' });
@@ -2987,6 +2836,13 @@ let mathInput = '';
 let mathAnswered = 0, mathCorrect = 0;
 let mathStreaks = { add:{r:0,w:0}, sub:{r:0,w:0}, mul:{r:0,w:0}, div:{r:0,w:0} };
 let mathLocked = false;
+let mathProblemStart = null;
+let mathProblemLimit = 0; // ms allowed for current problem
+let mathPaused = false;
+let mathPauseStart = null;
+let mathPromptShown = false;
+let mathProblems = []; // per-problem records for the session log
+let mathLevelStart = null;
 
 const MATH_OPS = ['add','sub','mul','div'];
 const MATH_SYM = { add:'+', sub:'−', mul:'×', div:'÷' };
@@ -3027,8 +2883,10 @@ function mathNewProblem() {
   else if (op === 'sub') { a = mri(2, ADD_MAX[L-1]); b = mri(2, a); answer = a - b; }
   else if (op === 'mul') { a = mri(2, MUL_MAX[L-1]); b = mri(2, MUL_MAX[L-1]); answer = a * b; }
   else { b = mri(2, MUL_MAX[L-1]); answer = mri(2, MUL_MAX[L-1]); a = b * answer; }
-  mathCurrent = { a, b, op, answer };
+  mathCurrent = { a, b, op, answer, L };
   mathInput = '';
+  mathProblemStart = Date.now();
+  mathProblemLimit = (8 + 2 * L) * 1000; // 10s at level 1 → 28s at level 10
   const p = document.getElementById('math-problem');
   p.textContent = `${a} ${MATH_SYM[op]} ${b}`;
   p.classList.remove('flash-right','flash-wrong');
@@ -3040,6 +2898,9 @@ function mathStart() {
   mathAnswered = 0; mathCorrect = 0;
   mathStreaks = { add:{r:0,w:0}, sub:{r:0,w:0}, mul:{r:0,w:0}, div:{r:0,w:0} };
   mathStartTime = Date.now();
+  mathPaused = false; mathPromptShown = false;
+  mathProblems = [];
+  mathLevelStart = { ...mathLevels };
   document.getElementById('math-idle').style.display = 'none';
   document.getElementById('math-done').style.display = 'none';
   document.getElementById('math-run').style.display = 'block';
@@ -3051,10 +2912,62 @@ function mathStart() {
 }
 
 function mathTimerRefresh() {
+  if (mathPaused) return;
   const s = Math.floor((Date.now() - mathStartTime) / 1000);
   const el = document.getElementById('math-timer');
   el.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
   el.classList.toggle('over', s >= 120);
+  // 2:00 gate — pause and ask once
+  if (s >= 120 && !mathPromptShown) {
+    mathPromptShown = true;
+    mathPaused = true;
+    mathPauseStart = Date.now();
+    document.getElementById('math-continue-modal').classList.add('open');
+    return;
+  }
+  // per-problem countdown + timeout
+  if (mathCurrent && !mathLocked) {
+    const left = Math.ceil((mathProblemLimit - (Date.now() - mathProblemStart)) / 1000);
+    const cd = document.getElementById('math-countdown');
+    cd.textContent = Math.max(0, left) + 's';
+    cd.classList.toggle('low', left <= 3);
+    if (left <= 0) mathTimeout();
+  }
+}
+
+function mathTimeout() {
+  const op = mathCurrent.op;
+  const st = mathStreaks[op];
+  mathAnswered++;
+  st.w++; st.r = 0;
+  let changed = false;
+  if (st.w >= 2 && mathLevels[op] > 1) { mathLevels[op]--; st.w = 0; changed = true; }
+  const p = document.getElementById('math-problem');
+  p.classList.add('flash-wrong');
+  p.textContent = `${mathCurrent.a} ${MATH_SYM[op]} ${mathCurrent.b} = ${mathCurrent.answer}`;
+  document.getElementById('math-countdown').textContent = "Time's up";
+  mathProblems.push({
+    op, L: mathCurrent.L, a: mathCurrent.a, b: mathCurrent.b,
+    answer: mathCurrent.answer, guess: null, correct: false,
+    ms: mathProblemLimit, timeout: true
+  });
+  mathLocked = true;
+  setTimeout(() => { mathLocked = false; if (mathRunning && !mathPaused) mathNewProblem(); }, 1100);
+  mathRunStats();
+  if (changed) mathSaveLevels();
+}
+
+function mathContinueFromPrompt(keepGoing) {
+  document.getElementById('math-continue-modal').classList.remove('open');
+  if (keepGoing) {
+    const pausedFor = Date.now() - mathPauseStart;
+    mathStartTime += pausedFor;
+    mathProblemStart += pausedFor;
+    mathPaused = false;
+  } else {
+    mathPaused = false;
+    mathEnd(120); // report exactly 2:00
+  }
 }
 
 function mathRunStats() {
@@ -3064,7 +2977,7 @@ function mathRunStats() {
 }
 
 function mathKey(k) {
-  if (!mathRunning || mathLocked) return;
+  if (!mathRunning || mathLocked || mathPaused) return;
   if (k === 'back') mathInput = mathInput.slice(0, -1);
   else if (k === 'enter') { mathSubmit(); return; }
   else if (mathInput.length < 7) mathInput += k;
@@ -3081,28 +2994,56 @@ function mathSubmit() {
   let changed = false;
   if (guess === mathCurrent.answer) {
     mathCorrect++;
-    st.r++; st.w = 0;
+    const elapsed = Date.now() - mathProblemStart;
+    const fast = elapsed <= mathProblemLimit * 0.5;
+    st.w = 0;
+    if (fast) st.r++; // only quick answers count toward promotion; slow-correct holds the streak
     if (st.r >= 3 && mathLevels[op] < 10) { mathLevels[op]++; st.r = 0; changed = true; }
     p.classList.add('flash-right');
     mathLocked = true;
-    setTimeout(() => { mathLocked = false; if (mathRunning) mathNewProblem(); }, 250);
+    setTimeout(() => { mathLocked = false; if (mathRunning && !mathPaused) mathNewProblem(); }, 250);
   } else {
     st.w++; st.r = 0;
     if (st.w >= 2 && mathLevels[op] > 1) { mathLevels[op]--; st.w = 0; changed = true; }
     p.classList.add('flash-wrong');
     p.textContent = `${mathCurrent.a} ${MATH_SYM[op]} ${mathCurrent.b} = ${mathCurrent.answer}`;
     mathLocked = true;
-    setTimeout(() => { mathLocked = false; if (mathRunning) mathNewProblem(); }, 1100);
+    setTimeout(() => { mathLocked = false; if (mathRunning && !mathPaused) mathNewProblem(); }, 1100);
   }
+  mathProblems.push({
+    op, L: mathCurrent.L, a: mathCurrent.a, b: mathCurrent.b,
+    answer: mathCurrent.answer, guess, correct: guess === mathCurrent.answer,
+    ms: Date.now() - mathProblemStart, timeout: false
+  });
   mathRunStats();
   if (changed) mathSaveLevels();
 }
 
-function mathEnd() {
+function mathOpSym(op) { return MATH_SYM[op]; }
+
+function buildMathSessionText(seconds) {
+  const now = new Date();
+  const dateFmt = (now.getMonth()+1)+'/'+now.getDate()+'/'+String(now.getFullYear()).slice(2);
+  let h = now.getHours(); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+  const timeFmt = h + ':' + String(now.getMinutes()).padStart(2,'0') + ap;
+  const dur = Math.floor(seconds/60) + ':' + String(seconds%60).padStart(2,'0');
+  const acc = mathAnswered ? Math.round(100 * mathCorrect / mathAnswered) : 0;
+  const opBits = MATH_OPS.map(o => o.toUpperCase() + ' ' + (mathLevelStart ? mathLevelStart[o] : '?') + '→' + mathLevels[o]).join(' · ');
+  const header = `SESSION ${dateFmt} ${timeFmt} · ${dur} · ${mathAnswered} answered · ${mathCorrect} correct (${acc}%) · ${opBits}`;
+  const lines = mathProblems.map(p => {
+    const secs = (p.ms/1000).toFixed(1) + 's';
+    if (p.timeout) return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} — (${p.answer}) TIMEOUT`;
+    if (p.correct) return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} = ${p.answer} ✓ ${secs}`;
+    return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} = ${p.guess} ✗ (${p.answer}) ${secs}`;
+  });
+  return header + '\n' + lines.join('\n');
+}
+
+function mathEnd(fixedSeconds) {
   if (!mathRunning) return;
   mathRunning = false;
   if (mathTick) clearInterval(mathTick);
-  const s = Math.floor((Date.now() - mathStartTime) / 1000);
+  const s = (typeof fixedSeconds === 'number') ? fixedSeconds : Math.floor((Date.now() - mathStartTime) / 1000);
   const acc = mathAnswered ? Math.round(100 * mathCorrect / mathAnswered) : 0;
   document.getElementById('math-run').style.display = 'none';
   document.getElementById('math-summary').innerHTML =
@@ -3111,6 +3052,24 @@ function mathEnd() {
     escHtml(mathLevelsLineText());
   document.getElementById('math-done').style.display = 'block';
   mathSaveLevels();
+  if (mathAnswered > 0) {
+    api('POST', 'math_sessions', { row_text: buildMathSessionText(s) });
+  }
+}
+
+async function renderMathLog() {
+  const el = document.getElementById('math-log-content');
+  el.textContent = 'Loading…';
+  const rows = await api('GET', 'math_sessions?order=created_at.desc') || [];
+  if (!rows.length) { el.textContent = 'No sessions yet.'; return; }
+  el.textContent = rows.map(r => r.row_text).join('\n\n');
+}
+
+function mathLogCopy() {
+  const t = document.getElementById('math-log-content').textContent;
+  if (!t || t === 'No sessions yet.' || t === 'Loading…') { toast('Nothing to copy'); return; }
+  navigator.clipboard && navigator.clipboard.writeText(t);
+  toast('Copied — paste to Claude anytime');
 }
 
 function mathBackToIdle() {
