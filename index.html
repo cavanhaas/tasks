@@ -279,6 +279,25 @@
   .modal-btns button:hover { opacity: 0.75; }
 
 
+  /* MATH TRAINER */
+  #math-view { display: none; }
+  .math-wrap { max-width: 420px; margin: 0 auto; }
+  .math-timer { font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 600; text-align: center; color: var(--ink); margin-bottom: 0.75rem; letter-spacing: 0.05em; }
+  .math-timer.over { color: #2ecc71; }
+  .math-problem { font-family: 'Syne', sans-serif; font-size: 2.6rem; font-weight: 600; text-align: center; color: var(--ink); min-height: 3.4rem; margin-bottom: 0.4rem; transition: color 0.1s; }
+  .math-problem.flash-right { color: #2ecc71; }
+  .math-problem.flash-wrong { color: var(--red); }
+  .math-answer { font-family: 'Syne', sans-serif; font-size: 2rem; text-align: center; color: var(--ink); min-height: 2.8rem; border-bottom: 2px solid var(--ink-faint); margin: 0 2rem 1.25rem; }
+  .math-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem; }
+  .math-key { font-family: 'Syne', sans-serif; font-size: 1.5rem; padding: 0.9rem 0; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); cursor: pointer; transition: all 0.1s; user-select: none; }
+  .math-key:active { background: var(--ink); color: var(--paper); }
+  .math-key.submit { background: #1e7a3c; border-color: #1e7a3c; color: #fff; }
+  .math-key.back { font-size: 1.2rem; }
+  .math-stats { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--ink-faint); text-align: center; margin-bottom: 1rem; }
+  .math-start-btn, .math-end-btn { display: block; margin: 0 auto; font-family: 'DM Sans', sans-serif; font-size: 1rem; padding: 0.7rem 2.2rem; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--ink); cursor: pointer; transition: all 0.15s; }
+  .math-start-btn:hover, .math-end-btn:hover { border-color: #f0c040; color: #f0c040; }
+  .math-summary { font-family: 'DM Sans', sans-serif; font-size: 1rem; color: var(--ink); text-align: center; line-height: 1.9; margin-bottom: 1.25rem; }
+
   /* HABITS */
   #habits-view, #habits-legacy-view { display: none; }
   .habits-header { display: flex; align-items: center; justify-content: center; gap: 0.9rem; margin-bottom: 1.25rem; }
@@ -415,6 +434,9 @@
       <button class="journal-icon-btn" id="journal-icon-btn" onclick="showView('journal')" title="Journal" aria-label="Open journal">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="11" y1="8" x2="17" y2="8"/><line x1="11" y1="12" x2="17" y2="12"/><line x1="11" y1="16" x2="15" y2="16"/></svg>
       </button>
+      <button class="clock-icon-btn" id="brain-icon-btn" onclick="showView('math')" title="Math Trainer" aria-label="Open math trainer" style="order:3">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2a2.5 2.5 0 0 0-2.45 2C5.32 4.22 4 5.7 4 7.5c0 .8.26 1.53.7 2.13C3.67 10.26 3 11.3 3 12.5c0 1.42.94 2.62 2.23 3.02-.15.36-.23.76-.23 1.18a3.3 3.3 0 0 0 3.3 3.3c.42 0 .83-.08 1.2-.23A2.5 2.5 0 0 0 12 21V4a2 2 0 0 0-2.5-2z"/><path d="M14.5 2A2.5 2.5 0 0 1 16.95 4C18.68 4.22 20 5.7 20 7.5c0 .8-.26 1.53-.7 2.13 1.03.63 1.7 1.67 1.7 2.87 0 1.42-.94 2.62-2.23 3.02.15.36.23.76.23 1.18a3.3 3.3 0 0 1-3.3 3.3c-.42 0-.83-.08-1.2-.23A2.5 2.5 0 0 1 12 21V4a2 2 0 0 1 2.5-2z"/></svg>
+      </button>
       <button class="clock-icon-btn" id="clock-icon-btn" onclick="showView('timelog')" title="Time Logger" aria-label="Open time logger">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 12"/></svg>
       </button>
@@ -501,6 +523,40 @@
       <div id="legacy-content" class="journal-editable read-only" data-placeholder="Permanent log — nothing here yet."></div>
     </div>
     <button class="delete-legacy-btn" onclick="deleteLegacy()">Delete Legacy</button>
+  </div>
+
+  <div id="math-view">
+    <div class="paper tl-paper math-wrap">
+      <div id="math-idle">
+        <div class="math-stats" id="math-levels-line">Loading levels…</div>
+        <button class="math-start-btn" onclick="mathStart()">Start</button>
+      </div>
+      <div id="math-run" style="display:none">
+        <div class="math-timer" id="math-timer">0:00</div>
+        <div class="math-problem" id="math-problem"></div>
+        <div class="math-answer" id="math-answer">&nbsp;</div>
+        <div class="math-pad">
+          <button class="math-key" onclick="mathKey('7')">7</button>
+          <button class="math-key" onclick="mathKey('8')">8</button>
+          <button class="math-key" onclick="mathKey('9')">9</button>
+          <button class="math-key" onclick="mathKey('4')">4</button>
+          <button class="math-key" onclick="mathKey('5')">5</button>
+          <button class="math-key" onclick="mathKey('6')">6</button>
+          <button class="math-key" onclick="mathKey('1')">1</button>
+          <button class="math-key" onclick="mathKey('2')">2</button>
+          <button class="math-key" onclick="mathKey('3')">3</button>
+          <button class="math-key back" onclick="mathKey('back')">⌫</button>
+          <button class="math-key" onclick="mathKey('0')">0</button>
+          <button class="math-key submit" onclick="mathKey('enter')">✓</button>
+        </div>
+        <div class="math-stats" id="math-run-stats"></div>
+        <button class="math-end-btn" onclick="mathEnd()">End session</button>
+      </div>
+      <div id="math-done" style="display:none">
+        <div class="math-summary" id="math-summary"></div>
+        <button class="math-start-btn" onclick="mathBackToIdle()">Done</button>
+      </div>
+    </div>
   </div>
 
   <div id="timelog-view">
@@ -908,7 +964,7 @@ async function loadAll() {
   }
 }
 
-const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view', timelog: 'timelog-view', 'timelog-legacy': 'timelog-legacy-view', habits: 'habits-view', 'habits-legacy': 'habits-legacy-view', 'habits-manage': 'habits-manage-view', 'habits-archive': 'habits-archive-view' };
+const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view', timelog: 'timelog-view', 'timelog-legacy': 'timelog-legacy-view', habits: 'habits-view', 'habits-legacy': 'habits-legacy-view', 'habits-manage': 'habits-manage-view', 'habits-archive': 'habits-archive-view', math: 'math-view' };
 
 function showView(v) {
   currentView = v;
@@ -947,6 +1003,8 @@ function showView(v) {
   if (v === 'habits-legacy') renderHabitsLegacy();
   if (v === 'habits-manage') renderHabitsManage();
   if (v === 'habits-archive') renderHabitsArchive();
+  if (v === 'math') mathOpenView();
+  document.getElementById('brain-icon-btn')?.classList.toggle('active', v === 'math');
   if (v === 'timelog' && !tlInT) setTimeout(() => document.getElementById('tl-cat')?.focus(), 100);
 }
 
@@ -2042,6 +2100,159 @@ async function submitJournalEntry() {
   document.getElementById('journal-title').value = '';
   document.getElementById('journal-body').value = '';
   
+
+// ================= MATH TRAINER =================
+let mathLevels = { add: 1, sub: 1, mul: 1, div: 1 };
+let mathLevelsRowId = null;
+let mathRunning = false;
+let mathStartTime = null;
+let mathTick = null;
+let mathCurrent = null; // {a,b,op,answer,label}
+let mathInput = '';
+let mathAnswered = 0, mathCorrect = 0;
+let mathStreaks = { add:{r:0,w:0}, sub:{r:0,w:0}, mul:{r:0,w:0}, div:{r:0,w:0} };
+let mathLocked = false;
+
+const MATH_OPS = ['add','sub','mul','div'];
+const MATH_SYM = { add:'+', sub:'−', mul:'×', div:'÷' };
+const ADD_MAX = [9,20,50,99,200,500,999,2000,5000,9999];
+const MUL_MAX = [5,9,12,15,20,25,40,60,80,99];
+
+function mri(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+async function mathLoadLevels() {
+  if (mathLevelsRowId) return;
+  const rows = await api('GET', 'math_levels?select=*&limit=1');
+  if (rows && rows[0]) {
+    mathLevelsRowId = rows[0].id;
+    try { const p = JSON.parse(rows[0].levels); MATH_OPS.forEach(o => { if (p[o]) mathLevels[o] = p[o]; }); } catch(e){}
+  }
+}
+
+async function mathSaveLevels() {
+  if (!mathLevelsRowId) return;
+  await api('PATCH', `math_levels?id=eq.${mathLevelsRowId}`, { levels: JSON.stringify(mathLevels) });
+}
+
+function mathLevelsLineText() {
+  return `Levels — ADD ${mathLevels.add} · SUB ${mathLevels.sub} · MUL ${mathLevels.mul} · DIV ${mathLevels.div}`;
+}
+
+async function mathOpenView() {
+  await mathLoadLevels();
+  const line = document.getElementById('math-levels-line');
+  if (line) line.textContent = mathLevelsLineText();
+}
+
+function mathNewProblem() {
+  const op = MATH_OPS[mri(0, 3)];
+  const L = mathLevels[op];
+  let a, b, answer;
+  if (op === 'add') { a = mri(2, ADD_MAX[L-1]); b = mri(2, ADD_MAX[L-1]); answer = a + b; }
+  else if (op === 'sub') { a = mri(2, ADD_MAX[L-1]); b = mri(2, a); answer = a - b; }
+  else if (op === 'mul') { a = mri(2, MUL_MAX[L-1]); b = mri(2, MUL_MAX[L-1]); answer = a * b; }
+  else { b = mri(2, MUL_MAX[L-1]); answer = mri(2, MUL_MAX[L-1]); a = b * answer; }
+  mathCurrent = { a, b, op, answer };
+  mathInput = '';
+  const p = document.getElementById('math-problem');
+  p.textContent = `${a} ${MATH_SYM[op]} ${b}`;
+  p.classList.remove('flash-right','flash-wrong');
+  document.getElementById('math-answer').innerHTML = '&nbsp;';
+}
+
+function mathStart() {
+  mathRunning = true; mathLocked = false;
+  mathAnswered = 0; mathCorrect = 0;
+  mathStreaks = { add:{r:0,w:0}, sub:{r:0,w:0}, mul:{r:0,w:0}, div:{r:0,w:0} };
+  mathStartTime = Date.now();
+  document.getElementById('math-idle').style.display = 'none';
+  document.getElementById('math-done').style.display = 'none';
+  document.getElementById('math-run').style.display = 'block';
+  if (mathTick) clearInterval(mathTick);
+  mathTick = setInterval(mathTimerRefresh, 250);
+  mathTimerRefresh();
+  mathRunStats();
+  mathNewProblem();
+}
+
+function mathTimerRefresh() {
+  const s = Math.floor((Date.now() - mathStartTime) / 1000);
+  const el = document.getElementById('math-timer');
+  el.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+  el.classList.toggle('over', s >= 120);
+}
+
+function mathRunStats() {
+  const acc = mathAnswered ? Math.round(100 * mathCorrect / mathAnswered) : 0;
+  document.getElementById('math-run-stats').textContent =
+    `${mathCorrect}/${mathAnswered} correct${mathAnswered ? ` · ${acc}%` : ''}`;
+}
+
+function mathKey(k) {
+  if (!mathRunning || mathLocked) return;
+  if (k === 'back') mathInput = mathInput.slice(0, -1);
+  else if (k === 'enter') { mathSubmit(); return; }
+  else if (mathInput.length < 7) mathInput += k;
+  document.getElementById('math-answer').textContent = mathInput || '\u00a0';
+}
+
+function mathSubmit() {
+  if (!mathCurrent || mathInput === '') return;
+  const guess = parseInt(mathInput, 10);
+  const op = mathCurrent.op;
+  const st = mathStreaks[op];
+  mathAnswered++;
+  const p = document.getElementById('math-problem');
+  let changed = false;
+  if (guess === mathCurrent.answer) {
+    mathCorrect++;
+    st.r++; st.w = 0;
+    if (st.r >= 3 && mathLevels[op] < 10) { mathLevels[op]++; st.r = 0; changed = true; }
+    p.classList.add('flash-right');
+    mathLocked = true;
+    setTimeout(() => { mathLocked = false; if (mathRunning) mathNewProblem(); }, 250);
+  } else {
+    st.w++; st.r = 0;
+    if (st.w >= 2 && mathLevels[op] > 1) { mathLevels[op]--; st.w = 0; changed = true; }
+    p.classList.add('flash-wrong');
+    p.textContent = `${mathCurrent.a} ${MATH_SYM[op]} ${mathCurrent.b} = ${mathCurrent.answer}`;
+    mathLocked = true;
+    setTimeout(() => { mathLocked = false; if (mathRunning) mathNewProblem(); }, 1100);
+  }
+  mathRunStats();
+  if (changed) mathSaveLevels();
+}
+
+function mathEnd() {
+  if (!mathRunning) return;
+  mathRunning = false;
+  if (mathTick) clearInterval(mathTick);
+  const s = Math.floor((Date.now() - mathStartTime) / 1000);
+  const acc = mathAnswered ? Math.round(100 * mathCorrect / mathAnswered) : 0;
+  document.getElementById('math-run').style.display = 'none';
+  document.getElementById('math-summary').innerHTML =
+    `Time: ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}<br>` +
+    `Answered: ${mathAnswered}<br>Correct: ${mathCorrect} (${acc}%)<br>` +
+    escHtml(mathLevelsLineText());
+  document.getElementById('math-done').style.display = 'block';
+  mathSaveLevels();
+}
+
+function mathBackToIdle() {
+  document.getElementById('math-done').style.display = 'none';
+  document.getElementById('math-idle').style.display = 'block';
+  document.getElementById('math-levels-line').textContent = mathLevelsLineText();
+}
+
+document.addEventListener('keydown', e => {
+  if (!mathRunning || currentView !== 'math') return;
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  if (e.key >= '0' && e.key <= '9') { mathKey(e.key); e.preventDefault(); }
+  else if (e.key === 'Backspace') { mathKey('back'); e.preventDefault(); }
+  else if (e.key === 'Enter') { mathKey('enter'); e.preventDefault(); }
+});
+
 // ================= UNDO =================
 let lastUndo = null; // { label, fn }
 
@@ -2763,6 +2974,159 @@ function habitsLegacyMarkExported() {
   });
 }
 
+
+
+// ================= MATH TRAINER =================
+let mathLevels = { add: 1, sub: 1, mul: 1, div: 1 };
+let mathLevelsRowId = null;
+let mathRunning = false;
+let mathStartTime = null;
+let mathTick = null;
+let mathCurrent = null; // {a,b,op,answer,label}
+let mathInput = '';
+let mathAnswered = 0, mathCorrect = 0;
+let mathStreaks = { add:{r:0,w:0}, sub:{r:0,w:0}, mul:{r:0,w:0}, div:{r:0,w:0} };
+let mathLocked = false;
+
+const MATH_OPS = ['add','sub','mul','div'];
+const MATH_SYM = { add:'+', sub:'−', mul:'×', div:'÷' };
+const ADD_MAX = [9,20,50,99,200,500,999,2000,5000,9999];
+const MUL_MAX = [5,9,12,15,20,25,40,60,80,99];
+
+function mri(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+async function mathLoadLevels() {
+  if (mathLevelsRowId) return;
+  const rows = await api('GET', 'math_levels?select=*&limit=1');
+  if (rows && rows[0]) {
+    mathLevelsRowId = rows[0].id;
+    try { const p = JSON.parse(rows[0].levels); MATH_OPS.forEach(o => { if (p[o]) mathLevels[o] = p[o]; }); } catch(e){}
+  }
+}
+
+async function mathSaveLevels() {
+  if (!mathLevelsRowId) return;
+  await api('PATCH', `math_levels?id=eq.${mathLevelsRowId}`, { levels: JSON.stringify(mathLevels) });
+}
+
+function mathLevelsLineText() {
+  return `Levels — ADD ${mathLevels.add} · SUB ${mathLevels.sub} · MUL ${mathLevels.mul} · DIV ${mathLevels.div}`;
+}
+
+async function mathOpenView() {
+  await mathLoadLevels();
+  const line = document.getElementById('math-levels-line');
+  if (line) line.textContent = mathLevelsLineText();
+}
+
+function mathNewProblem() {
+  const op = MATH_OPS[mri(0, 3)];
+  const L = mathLevels[op];
+  let a, b, answer;
+  if (op === 'add') { a = mri(2, ADD_MAX[L-1]); b = mri(2, ADD_MAX[L-1]); answer = a + b; }
+  else if (op === 'sub') { a = mri(2, ADD_MAX[L-1]); b = mri(2, a); answer = a - b; }
+  else if (op === 'mul') { a = mri(2, MUL_MAX[L-1]); b = mri(2, MUL_MAX[L-1]); answer = a * b; }
+  else { b = mri(2, MUL_MAX[L-1]); answer = mri(2, MUL_MAX[L-1]); a = b * answer; }
+  mathCurrent = { a, b, op, answer };
+  mathInput = '';
+  const p = document.getElementById('math-problem');
+  p.textContent = `${a} ${MATH_SYM[op]} ${b}`;
+  p.classList.remove('flash-right','flash-wrong');
+  document.getElementById('math-answer').innerHTML = '&nbsp;';
+}
+
+function mathStart() {
+  mathRunning = true; mathLocked = false;
+  mathAnswered = 0; mathCorrect = 0;
+  mathStreaks = { add:{r:0,w:0}, sub:{r:0,w:0}, mul:{r:0,w:0}, div:{r:0,w:0} };
+  mathStartTime = Date.now();
+  document.getElementById('math-idle').style.display = 'none';
+  document.getElementById('math-done').style.display = 'none';
+  document.getElementById('math-run').style.display = 'block';
+  if (mathTick) clearInterval(mathTick);
+  mathTick = setInterval(mathTimerRefresh, 250);
+  mathTimerRefresh();
+  mathRunStats();
+  mathNewProblem();
+}
+
+function mathTimerRefresh() {
+  const s = Math.floor((Date.now() - mathStartTime) / 1000);
+  const el = document.getElementById('math-timer');
+  el.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+  el.classList.toggle('over', s >= 120);
+}
+
+function mathRunStats() {
+  const acc = mathAnswered ? Math.round(100 * mathCorrect / mathAnswered) : 0;
+  document.getElementById('math-run-stats').textContent =
+    `${mathCorrect}/${mathAnswered} correct${mathAnswered ? ` · ${acc}%` : ''}`;
+}
+
+function mathKey(k) {
+  if (!mathRunning || mathLocked) return;
+  if (k === 'back') mathInput = mathInput.slice(0, -1);
+  else if (k === 'enter') { mathSubmit(); return; }
+  else if (mathInput.length < 7) mathInput += k;
+  document.getElementById('math-answer').textContent = mathInput || '\u00a0';
+}
+
+function mathSubmit() {
+  if (!mathCurrent || mathInput === '') return;
+  const guess = parseInt(mathInput, 10);
+  const op = mathCurrent.op;
+  const st = mathStreaks[op];
+  mathAnswered++;
+  const p = document.getElementById('math-problem');
+  let changed = false;
+  if (guess === mathCurrent.answer) {
+    mathCorrect++;
+    st.r++; st.w = 0;
+    if (st.r >= 3 && mathLevels[op] < 10) { mathLevels[op]++; st.r = 0; changed = true; }
+    p.classList.add('flash-right');
+    mathLocked = true;
+    setTimeout(() => { mathLocked = false; if (mathRunning) mathNewProblem(); }, 250);
+  } else {
+    st.w++; st.r = 0;
+    if (st.w >= 2 && mathLevels[op] > 1) { mathLevels[op]--; st.w = 0; changed = true; }
+    p.classList.add('flash-wrong');
+    p.textContent = `${mathCurrent.a} ${MATH_SYM[op]} ${mathCurrent.b} = ${mathCurrent.answer}`;
+    mathLocked = true;
+    setTimeout(() => { mathLocked = false; if (mathRunning) mathNewProblem(); }, 1100);
+  }
+  mathRunStats();
+  if (changed) mathSaveLevels();
+}
+
+function mathEnd() {
+  if (!mathRunning) return;
+  mathRunning = false;
+  if (mathTick) clearInterval(mathTick);
+  const s = Math.floor((Date.now() - mathStartTime) / 1000);
+  const acc = mathAnswered ? Math.round(100 * mathCorrect / mathAnswered) : 0;
+  document.getElementById('math-run').style.display = 'none';
+  document.getElementById('math-summary').innerHTML =
+    `Time: ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}<br>` +
+    `Answered: ${mathAnswered}<br>Correct: ${mathCorrect} (${acc}%)<br>` +
+    escHtml(mathLevelsLineText());
+  document.getElementById('math-done').style.display = 'block';
+  mathSaveLevels();
+}
+
+function mathBackToIdle() {
+  document.getElementById('math-done').style.display = 'none';
+  document.getElementById('math-idle').style.display = 'block';
+  document.getElementById('math-levels-line').textContent = mathLevelsLineText();
+}
+
+document.addEventListener('keydown', e => {
+  if (!mathRunning || currentView !== 'math') return;
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  if (e.key >= '0' && e.key <= '9') { mathKey(e.key); e.preventDefault(); }
+  else if (e.key === 'Backspace') { mathKey('back'); e.preventDefault(); }
+  else if (e.key === 'Enter') { mathKey('enter'); e.preventDefault(); }
+});
 
 // ================= UNDO =================
 let lastUndo = null; // { label, fn }
