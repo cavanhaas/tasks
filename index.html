@@ -114,6 +114,22 @@
   .tl-pulse.green { display: inline-block; background: #2ecc71; animation: tlpulse 1.6s ease-in-out infinite; }
   .tl-pulse.orange { display: inline-block; background: #f39c12; animation: tlpulse 1.6s ease-in-out infinite; }
   @keyframes tlpulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.75); } }
+  .tl-adj-section-label { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin: 1rem 0 0.4rem; }
+  .tl-adj-time { border: none; border-bottom: 1.5px solid var(--ink-faint); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: var(--ink); outline: none; padding: 0.25rem 0.2rem; border-radius: 4px 4px 0 0; }
+  .tl-adj-time:focus { border-color: #f0c040; background: var(--unsaved); }
+  .tl-adj-break { display: flex; align-items: center; gap: 6px; margin-bottom: 0.5rem; }
+  .tl-adj-dash { color: var(--ink-faint); font-size: 0.85rem; }
+  .tl-adj-note { flex: 1; min-width: 60px; border: none; border-bottom: 1.5px solid var(--ink-faint); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--ink); outline: none; padding: 0.25rem 0.2rem; border-radius: 4px 4px 0 0; }
+  .tl-adj-note:focus { border-color: #f0c040; background: var(--unsaved); }
+  .tl-adj-del { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 0.85rem; padding: 2px 5px; border-radius: 4px; }
+  .tl-adj-del:hover { color: var(--red); }
+  .tl-adj-empty { font-family: 'DM Sans', sans-serif; font-style: italic; font-size: 0.85rem; color: var(--ink-faint); padding: 0.2rem 0 0.5rem; }
+  .tl-adj-error { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--red); min-height: 1.1em; margin-top: 0.6rem; }
+  .today-board-label-row { display: flex; align-items: center; gap: 0.5rem; }
+  .today-board-up { background: none; border: 1px solid var(--line); border-radius: 4px; color: var(--ink-faint); cursor: pointer; font-size: 0.7rem; padding: 1px 6px; transition: all 0.15s; }
+  .today-board-up:hover:not(:disabled) { border-color: #f0c040; color: #f0c040; }
+  .today-board-up:disabled { opacity: 0.25; cursor: not-allowed; }
+
   .tl-log-item { padding: 0.6rem 0; border-bottom: 1px solid var(--line); }
   .tl-log-row { font-family: monospace; font-size: 0.78rem; color: var(--ink-light); overflow-x: auto; white-space: nowrap; }
   .tl-log-meta { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; color: var(--ink-faint); margin-top: 2px; }
@@ -605,6 +621,7 @@
           <div class="tl-row-text" id="tl-row">Row appears here after clock out</div>
         </div>
         <div class="tl-row-actions">
+          <button class="task-action-btn" id="tl-adjust-btn" style="display:none" onclick="tlOpenAdjust('live')">Adjust times</button>
           <button class="task-action-btn" onclick="tlCopy()">Copy</button>
           <button class="task-action-btn" onclick="showView('timelog-legacy')">Legacy</button>
         </div>
@@ -689,6 +706,31 @@
     <div class="modal-btns">
       <button onclick="closeModal()">Cancel</button>
       <button class="ok" id="modal-ok" onclick="modalConfirm()">Add</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="tl-adjust-modal">
+  <div class="modal" style="width:min(460px,94vw);">
+    <h3 id="tl-adjust-title">Adjust times</h3>
+    <div id="tl-adjust-notes-wrap">
+      <div class="tl-adj-section-label">Notes (optional)</div>
+      <input type="text" id="tl-adjust-notes" class="tl-adj-note" style="width:100%;font-size:0.95rem;"
+        onkeydown="if(event.key==='Enter')tlAdjustSave()" placeholder="What you worked on…" />
+    </div>
+    <div class="tl-adj-section-label">Clock in</div>
+    <input type="time" id="tl-adjust-in" class="tl-adj-time" />
+    <div id="tl-adjust-out-wrap">
+      <div class="tl-adj-section-label">Clock out</div>
+      <input type="time" id="tl-adjust-out" class="tl-adj-time" />
+    </div>
+    <div class="tl-adj-section-label">Breaks</div>
+    <div id="tl-adjust-breaks"></div>
+    <button class="task-action-btn" style="margin-top:0.3rem" onclick="tlAddBreakRow()">+ Add break</button>
+    <div class="tl-adj-error" id="tl-adjust-error"></div>
+    <div class="modal-btns" style="margin-top:1rem;">
+      <button onclick="tlCloseAdjust()">Cancel</button>
+      <button class="ok" id="tl-adjust-save" onclick="tlAdjustSave()">Save</button>
     </div>
   </div>
 </div>
@@ -1351,10 +1393,21 @@ function renderToday() {
     byBoard[bid].subs.push({ sub: s, parent });
   });
 
+  // Board groups follow their own Do Today order (independent of Lists tabs)
+  const orderedBids = Object.keys(byBoard).sort((a, b) => {
+    const ba = boards.find(x => x.id === a), bb = boards.find(x => x.id === b);
+    return (ba?.today_board_position ?? 99999) - (bb?.today_board_position ?? 99999);
+  });
+
   let html = '';
-  Object.entries(byBoard).forEach(([bid, group]) => {
+  orderedBids.forEach((bid, gi) => {
+    const group = byBoard[bid];
     const board = boards.find(b => b.id === bid);
-    html += `<div class="today-board-group" data-board="${bid}"><div class="today-board-label">${board ? escHtml(board.name) : 'Unknown'}</div>`;
+    html += `<div class="today-board-group" data-board="${bid}">
+      <div class="today-board-label"><span class="today-board-label-row">
+        <button class="today-board-up" onclick="moveTodayBoardUp('${bid}')" ${gi === 0 ? 'disabled' : ''} title="Move up">▲</button>
+        <span>${board ? escHtml(board.name) : 'Unknown'}</span>
+      </span></div>`;
 
     // Combined, ordered list: tasks and subtasks interleave by saved today_position
     const items = [
@@ -1394,6 +1447,24 @@ function renderToday() {
 
   el.innerHTML = html;
   setTimeout(setupTodayDrag, 0);
+}
+
+async function moveTodayBoardUp(bid) {
+  const visible = [...document.querySelectorAll('#today-content .today-board-group')].map(el => el.dataset.board);
+  const idx = visible.indexOf(bid);
+  if (idx <= 0) return;
+  const reordered = [...visible];
+  [reordered[idx-1], reordered[idx]] = [reordered[idx], reordered[idx-1]];
+  const patches = [];
+  reordered.forEach((id, i) => {
+    const b = boards.find(x => x.id === id);
+    if (b && b.today_board_position !== i) {
+      b.today_board_position = i;
+      patches.push(api('PATCH', `boards?id=eq.${id}`, { today_board_position: i }));
+    }
+  });
+  renderToday();
+  await Promise.all(patches);
 }
 
 function setupTodayDrag() {
@@ -2151,20 +2222,33 @@ async function deleteLegacy() {
 
 
 // TIME LOGGER (persistent session)
-let tlInT = null, tlOutT = null, tlBreakStart = null, tlBreakMs = 0, tlOnBreak = false, tlTick = null;
-let tlBreakNotes = '';
+// Breaks are a real list: [{start:ms, end:ms|null, note:string}] — editable/insertable
+let tlInT = null, tlOutT = null, tlBreaks = [], tlTick = null;
 let tlSessionRowId = null;
+let tlAdjustMode = null; // 'live' | 'clockout'
 
 function tlPad(n) { return String(n).padStart(2,'0'); }
 function tlFmtShort(ms) { let s=Math.round(ms/1000); let h=Math.floor(s/3600); s%=3600; let m=Math.floor(s/60); return h+':'+tlPad(m); }
 function tlFmtDur(ms) { let s=Math.round(ms/1000); let h=Math.floor(s/3600); s%=3600; let m=Math.floor(s/60); s%=60; return h+':'+tlPad(m)+':'+tlPad(s); }
 function tlFmtTime(d) { let h=d.getHours(); let m=d.getMinutes(); let s=d.getSeconds(); let ap=h>=12?'PM':'AM'; h=h%12||12; return h+':'+tlPad(m)+':'+tlPad(s)+' '+ap; }
 function tlFmtDate(d) { return (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2); }
+function tlFmtClock(ms) { const d = new Date(ms); let h=d.getHours(); let m=d.getMinutes(); let ap=h>=12?'PM':'AM'; h=h%12||12; return h+':'+tlPad(m)+ap; }
+
+// --- derived break state ---
+function tlOpenBreak() { return tlBreaks.find(b => b.end === null) || null; }
+function tlOnBreak() { return !!tlOpenBreak(); }
+function tlBreakTotal(nowMs) {
+  const now = nowMs || Date.now();
+  return tlBreaks.reduce((sum, b) => sum + Math.max(0, (b.end === null ? now : b.end) - b.start), 0);
+}
+function tlBreakNotesStr() {
+  return tlBreaks.map(b => (b.note || '').trim()).filter(Boolean).join(' * ');
+}
 
 function tlRefresh() {
   if (!tlInT) return;
   const end = tlOutT || new Date();
-  const curBreak = tlBreakMs + (tlOnBreak ? (Date.now() - tlBreakStart) : 0);
+  const curBreak = tlBreakTotal(end.getTime());
   const total = end - tlInT;
   document.getElementById('tl-elapsed').textContent = tlFmtDur(total);
   document.getElementById('tl-break').textContent = tlFmtDur(curBreak);
@@ -2177,11 +2261,13 @@ function tlSetButtons(state) {
   const breakLabel = document.getElementById('tl-break-label');
   const inLabel = document.getElementById('tl-in-label');
   const pulse = document.getElementById('tl-pulse');
+  const adjBtn = document.getElementById('tl-adjust-btn');
   btnIn.classList.remove('green');
   btnBreak.classList.remove('orange');
   pulse.className = 'tl-pulse';
   breakLabel.textContent = 'Start break';
   inLabel.textContent = (state === 'in') ? 'Clocked in' : 'Clock in';
+  if (adjBtn) adjBtn.style.display = (state === 'in' || state === 'break') ? '' : 'none';
   if (state === 'in') {
     btnIn.classList.add('green');
     pulse.classList.add('green');
@@ -2202,13 +2288,16 @@ async function tlGetSessionRow() {
 async function tlSaveSession() {
   const id = await tlGetSessionRow();
   if (!id) return;
+  const open = tlOpenBreak();
   await api('PATCH', `active_session?id=eq.${id}`, {
     clock_in: tlInT ? tlInT.toISOString() : null,
-    break_start: tlOnBreak && tlBreakStart ? new Date(tlBreakStart).toISOString() : null,
-    break_ms: tlBreakMs,
-    on_break: tlOnBreak,
+    breaks: JSON.stringify(tlBreaks),
+    // legacy mirror columns kept in sync so nothing else breaks
+    break_start: open ? new Date(open.start).toISOString() : null,
+    break_ms: tlBreaks.filter(b => b.end !== null).reduce((s,b) => s + (b.end - b.start), 0),
+    on_break: !!open,
     category: document.getElementById('tl-cat').value || '',
-    break_notes: tlBreakNotes
+    break_notes: tlBreakNotesStr()
   });
 }
 
@@ -2220,13 +2309,20 @@ async function tlRestoreSession() {
   if (!s.clock_in) return; // no active session
   tlInT = new Date(s.clock_in);
   tlOutT = null;
-  tlBreakMs = s.break_ms || 0;
-  tlOnBreak = !!s.on_break;
-  tlBreakStart = s.break_start ? new Date(s.break_start).getTime() : null;
-  tlBreakNotes = s.break_notes || '';
+  // Prefer the breaks list; fall back to legacy columns for a session started pre-upgrade
+  tlBreaks = [];
+  let parsed = null;
+  try { parsed = s.breaks ? JSON.parse(s.breaks) : null; } catch(e) { parsed = null; }
+  if (Array.isArray(parsed) && parsed.length) {
+    tlBreaks = parsed;
+  } else if (s.break_ms || s.on_break) {
+    if (s.break_ms) tlBreaks.push({ start: tlInT.getTime(), end: tlInT.getTime() + s.break_ms, note: s.break_notes || '' });
+    if (s.on_break && s.break_start) tlBreaks.push({ start: new Date(s.break_start).getTime(), end: null, note: '' });
+  }
   document.getElementById('tl-cat').value = s.category || '';
-  document.getElementById('tl-status').textContent = tlOnBreak ? 'On break' : 'Clocked in';
-  tlSetButtons(tlOnBreak ? 'break' : 'in');
+  const onBreak = tlOnBreak();
+  document.getElementById('tl-status').textContent = onBreak ? 'On break' : 'Clocked in';
+  tlSetButtons(onBreak ? 'break' : 'in');
   if (tlTick) clearInterval(tlTick);
   tlTick = setInterval(tlRefresh, 1000);
   tlRefresh();
@@ -2234,19 +2330,17 @@ async function tlRestoreSession() {
 
 async function tlClockIn() {
   // If on break, clicking Clock in ends the break
-  if (tlInT && tlOnBreak && !tlOutT) {
-    tlOnBreak = false;
-    tlBreakMs += Date.now() - tlBreakStart;
-    tlBreakStart = null;
+  const open = tlOpenBreak();
+  if (tlInT && open && !tlOutT) {
+    open.end = Date.now();
     document.getElementById('tl-status').textContent = 'Clocked in';
     tlSetButtons('in');
     tlRefresh();
     await tlSaveSession();
     return;
   }
-  if (tlInT && !tlOutT) return; // already clocked in, not on break — ignore
-  tlInT = new Date(); tlOutT = null; tlBreakMs = 0; tlOnBreak = false; tlBreakStart = null;
-  tlBreakNotes = '';
+  if (tlInT && !tlOutT) return; // already clocked in
+  tlInT = new Date(); tlOutT = null; tlBreaks = [];
   document.getElementById('tl-status').textContent = 'Clocked in';
   document.getElementById('tl-row').textContent = 'Row appears here after clock out';
   document.getElementById('tl-row').style.color = 'var(--ink-faint)';
@@ -2259,18 +2353,14 @@ async function tlClockIn() {
 
 async function tlBreak() {
   if (!tlInT || tlOutT) return;
-  if (!tlOnBreak) {
-    // Starting a break — prompt for note
+  const open = tlOpenBreak();
+  if (!open) {
     const note = window.prompt('Break note (optional):', '');
-    tlOnBreak = true; tlBreakStart = Date.now();
-    if (note && note.trim()) {
-      tlBreakNotes = tlBreakNotes ? tlBreakNotes + ' * ' + note.trim() : note.trim();
-    }
+    tlBreaks.push({ start: Date.now(), end: null, note: (note || '').trim() });
     document.getElementById('tl-status').textContent = 'On break';
     tlSetButtons('break');
   } else {
-    tlOnBreak = false; tlBreakMs += Date.now() - tlBreakStart;
-    tlBreakStart = null;
+    open.end = Date.now();
     document.getElementById('tl-status').textContent = 'Clocked in';
     tlSetButtons('in');
   }
@@ -2278,36 +2368,158 @@ async function tlBreak() {
   await tlSaveSession();
 }
 
-async function tlClockOut() {
+// Clock out opens the adjust panel in clockout mode (notes + editable times)
+function tlClockOut() {
   if (!tlInT) return;
-  if (tlOnBreak) { tlOnBreak = false; tlBreakMs += Date.now() - tlBreakStart; tlBreakStart = null; }
-  tlOutT = new Date();
+  tlOpenAdjust('clockout');
+}
+
+async function tlFinalizeClockOut(stopMs, notes) {
+  const open = tlOpenBreak();
+  if (open) open.end = Math.min(stopMs, Date.now());
+  tlOutT = new Date(stopMs);
   document.getElementById('tl-status').textContent = 'Clocked out';
   tlSetButtons('idle');
   if (tlTick) clearInterval(tlTick);
   tlRefresh();
   const total = tlOutT - tlInT;
-  const adjusted = Math.max(0, total - tlBreakMs);
+  const breakMs = tlBreakTotal(stopMs);
+  const adjusted = Math.max(0, total - breakMs);
   const cat = document.getElementById('tl-cat').value || '';
-  // Optional notes popup — Enter with text saves it, Enter empty skips
-  const notes = (window.prompt('Notes (optional):', '') || '').trim();
   // Format: Start | Stop | Adjusted | Break | Total | Category | Notes | Break Notes
-  const row = tlFmtDate(tlInT)+' '+tlFmtTime(tlInT)+'\t'+tlFmtDate(tlOutT)+' '+tlFmtTime(tlOutT)+'\t'+tlFmtDur(adjusted)+'\t'+tlFmtDur(tlBreakMs)+'\t'+tlFmtDur(total)+'\t'+cat+'\t'+notes+'\t'+tlBreakNotes;
+  const row = tlFmtDate(tlInT)+' '+tlFmtTime(tlInT)+'\t'+tlFmtDate(tlOutT)+' '+tlFmtTime(tlOutT)+'\t'+tlFmtDur(adjusted)+'\t'+tlFmtDur(breakMs)+'\t'+tlFmtDur(total)+'\t'+cat+'\t'+notes+'\t'+tlBreakNotesStr();
   const rowEl = document.getElementById('tl-row');
   rowEl.textContent = row;
   rowEl.style.color = 'var(--ink-light)';
-  // Auto-copy to clipboard
   if (navigator.clipboard) {
     try { await navigator.clipboard.writeText(row); toast('Copied — Cmd+V into Sheets'); }
     catch(e) { toast('Row ready (copy failed — use Copy button)'); }
   }
-  // Auto-save to legacy
   await api('POST', 'time_logs', { row_text: row });
-  // Clear active session in DB and task field
   document.getElementById('tl-cat').value = '';
-  tlInT = null; tlBreakMs = 0; tlBreakNotes = '';
+  tlInT = null; tlOutT = null; tlBreaks = [];
   await tlSaveSession();
-  tlInT = null;
+}
+
+// ---------- Adjust times panel ----------
+function tlToTimeVal(ms) {
+  const d = new Date(ms);
+  return tlPad(d.getHours()) + ':' + tlPad(d.getMinutes());
+}
+// Apply "HH:MM" onto the session's calendar day; roll forward if it lands before minMs
+function tlFromTimeVal(val, minMs) {
+  if (!val) return null;
+  const [h, m] = val.split(':').map(Number);
+  const base = new Date(tlInT ? tlInT.getTime() : Date.now());
+  const d = new Date(base);
+  d.setHours(h, m, 0, 0);
+  if (minMs != null && d.getTime() < minMs) d.setDate(d.getDate() + 1);
+  return d.getTime();
+}
+
+function tlOpenAdjust(mode) {
+  tlAdjustMode = mode;
+  document.getElementById('tl-adjust-title').textContent = (mode === 'clockout') ? 'Clock out' : 'Adjust times';
+  document.getElementById('tl-adjust-notes-wrap').style.display = (mode === 'clockout') ? '' : 'none';
+  document.getElementById('tl-adjust-out-wrap').style.display = (mode === 'clockout') ? '' : 'none';
+  document.getElementById('tl-adjust-save').textContent = (mode === 'clockout') ? 'Clock out & copy' : 'Save';
+  document.getElementById('tl-adjust-in').value = tlInT ? tlToTimeVal(tlInT.getTime()) : '';
+  document.getElementById('tl-adjust-out').value = tlToTimeVal(Date.now());
+  document.getElementById('tl-adjust-notes').value = '';
+  document.getElementById('tl-adjust-error').textContent = '';
+  tlRenderAdjustBreaks();
+  document.getElementById('tl-adjust-modal').classList.add('open');
+  setTimeout(() => {
+    const f = document.getElementById(mode === 'clockout' ? 'tl-adjust-notes' : 'tl-adjust-in');
+    f && f.focus();
+  }, 60);
+}
+
+function tlCloseAdjust() { document.getElementById('tl-adjust-modal').classList.remove('open'); }
+
+function tlRenderAdjustBreaks() {
+  const wrap = document.getElementById('tl-adjust-breaks');
+  if (!tlBreaks.length) { wrap.innerHTML = '<div class="tl-adj-empty">No breaks logged.</div>'; return; }
+  wrap.innerHTML = tlBreaks.map((b, i) => `
+    <div class="tl-adj-break">
+      <input type="time" class="tl-adj-time" id="tl-adj-bs-${i}" value="${tlToTimeVal(b.start)}" />
+      <span class="tl-adj-dash">→</span>
+      <input type="time" class="tl-adj-time" id="tl-adj-be-${i}" value="${b.end !== null ? tlToTimeVal(b.end) : ''}" placeholder="running" />
+      <input type="text" class="tl-adj-note" id="tl-adj-bn-${i}" value="${escHtml(b.note || '')}" placeholder="note" />
+      <button class="tl-adj-del" onclick="tlRemoveBreak(${i})" title="Remove break">✕</button>
+    </div>`).join('');
+}
+
+function tlCollectAdjust() {
+  // Returns {inMs, outMs, breaks} or throws Error(msg)
+  const inVal = document.getElementById('tl-adjust-in').value;
+  if (!inVal) throw new Error('Clock-in time required.');
+  let inMs = tlFromTimeVal(inVal, null);
+  if (inMs > Date.now() + 60000) inMs -= 24 * 3600 * 1000; // typed a time later than now → previous day
+  let outMs = null;
+  if (tlAdjustMode === 'clockout') {
+    const outVal = document.getElementById('tl-adjust-out').value;
+    if (!outVal) throw new Error('Clock-out time required.');
+    outMs = tlFromTimeVal(outVal, inMs);
+    if (outMs < inMs) throw new Error('Clock-out cannot be before clock-in.');
+  }
+  const ceiling = outMs || Date.now();
+  const breaks = [];
+  for (let i = 0; i < tlBreaks.length; i++) {
+    const sVal = document.getElementById(`tl-adj-bs-${i}`).value;
+    const eVal = document.getElementById(`tl-adj-be-${i}`).value;
+    const note = document.getElementById(`tl-adj-bn-${i}`).value.trim();
+    if (!sVal) throw new Error(`Break ${i+1}: start time required.`);
+    const s = tlFromTimeVal(sVal, inMs);
+    let e = eVal ? tlFromTimeVal(eVal, s) : null;
+    if (s < inMs) throw new Error(`Break ${i+1} starts before clock-in.`);
+    if (e !== null && e < s) throw new Error(`Break ${i+1} ends before it starts.`);
+    if (e !== null && e > ceiling) throw new Error(`Break ${i+1} ends after clock-out.`);
+    if (e === null && tlAdjustMode === 'clockout') e = ceiling; // close the open break at clock-out
+    if (s > ceiling) throw new Error(`Break ${i+1} starts after clock-out.`);
+    breaks.push({ start: s, end: e, note });
+  }
+  breaks.sort((a, b) => a.start - b.start);
+  for (let i = 1; i < breaks.length; i++) {
+    const prevEnd = breaks[i-1].end === null ? Infinity : breaks[i-1].end;
+    if (breaks[i].start < prevEnd) throw new Error('Breaks overlap — fix the times.');
+  }
+  if (breaks.filter(b => b.end === null).length > 1) throw new Error('Only one break can be running.');
+  return { inMs, outMs, breaks };
+}
+
+function tlAddBreakRow() {
+  const now = Date.now();
+  tlBreaks.push({ start: now, end: now, note: '' });
+  tlRenderAdjustBreaks();
+}
+
+function tlRemoveBreak(i) {
+  tlBreaks.splice(i, 1);
+  tlRenderAdjustBreaks();
+}
+
+async function tlAdjustSave() {
+  const errEl = document.getElementById('tl-adjust-error');
+  errEl.textContent = '';
+  let data;
+  try { data = tlCollectAdjust(); }
+  catch (e) { errEl.textContent = e.message; return; }
+  tlInT = new Date(data.inMs);
+  tlBreaks = data.breaks;
+  if (tlAdjustMode === 'clockout') {
+    const notes = document.getElementById('tl-adjust-notes').value.trim();
+    tlCloseAdjust();
+    await tlFinalizeClockOut(data.outMs, notes);
+  } else {
+    const onBreak = tlOnBreak();
+    document.getElementById('tl-status').textContent = onBreak ? 'On break' : 'Clocked in';
+    tlSetButtons(onBreak ? 'break' : 'in');
+    tlRefresh();
+    tlCloseAdjust();
+    await tlSaveSession();
+    toast('Times updated');
+  }
 }
 
 function tlCopy() {
