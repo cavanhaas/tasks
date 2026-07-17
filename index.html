@@ -137,8 +137,13 @@
   .tl-log-row { font-family: monospace; font-size: 0.78rem; color: var(--ink-light); overflow-x: auto; white-space: nowrap; }
   .tl-log-meta { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; color: var(--ink-faint); margin-top: 2px; }
 
-  .board-wb-wrap { margin-bottom: 1.25rem; }
-  .board-wb { height: 90px; min-height: 60px; }
+  .board-wb-row { display: flex; justify-content: flex-end; margin-bottom: 0.6rem; }
+  .pad-btn { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-light); background: none; border: 1px solid var(--line); border-radius: 4px; padding: 0.25rem 0.75rem; cursor: pointer; transition: all 0.15s; }
+  .pad-btn:hover { border-color: #f0c040; color: #f0c040; }
+  .pad-btn.open { border-color: #f0c040; color: #f0c040; }
+  .board-wb-wrap { display: none; margin-bottom: 1.25rem; }
+  .board-wb-wrap.open { display: block; }
+  .board-wb { height: 90px; min-height: 2.2rem; }
   .board-tabs { display: flex; gap: 0; margin-bottom: 1.75rem; border-bottom: 1px solid var(--line); overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; user-select: none; }
   .board-tabs::-webkit-scrollbar { display: none; }
 
@@ -493,7 +498,10 @@
 
   <div id="tasks-view">
     <div class="board-tabs" id="board-tabs"></div>
-    <div class="board-wb-wrap">
+    <div class="board-wb-row">
+      <button class="pad-btn" id="pad-btn" onclick="toggleBoardPad()">Pad</button>
+    </div>
+    <div class="board-wb-wrap" id="board-wb-wrap">
       <textarea id="board-whiteboard" class="journal-whiteboard board-wb" placeholder="Board scratchpad…" oninput="onBoardWbInput()"></textarea>
     </div>
     <div class="paper" id="paper-content"></div>
@@ -2145,12 +2153,25 @@ function loadBoardWhiteboard() {
   el.value = (b && b.whiteboard) || '';
   const savedH = localStorage.getItem('boardWbH-' + activeBoard);
   el.style.height = savedH || '';
+  const isOpen = localStorage.getItem('boardWbOpen-' + activeBoard) === '1';
+  document.getElementById('board-wb-wrap')?.classList.toggle('open', isOpen);
+  document.getElementById('pad-btn')?.classList.toggle('open', isOpen);
   if (!el._wbObs) {
     el._wbObs = new ResizeObserver(() => {
       if (boardWbLoadedFor) localStorage.setItem('boardWbH-' + boardWbLoadedFor, el.style.height);
     });
     el._wbObs.observe(el);
   }
+}
+
+function toggleBoardPad() {
+  const wrap = document.getElementById('board-wb-wrap');
+  const btn = document.getElementById('pad-btn');
+  const open = !wrap.classList.contains('open');
+  wrap.classList.toggle('open', open);
+  btn.classList.toggle('open', open);
+  localStorage.setItem('boardWbOpen-' + activeBoard, open ? '1' : '0');
+  if (open) setTimeout(() => document.getElementById('board-whiteboard')?.focus(), 60);
 }
 
 function onBoardWbInput() {
