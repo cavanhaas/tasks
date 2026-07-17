@@ -72,6 +72,9 @@
   .undo-btn { display: none; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink-light); background: none; border: 1px solid var(--line); border-radius: 4px; padding: 0.25rem 0.7rem; cursor: pointer; transition: all 0.15s; margin: 0.35rem 0 0.5rem; }
   .undo-btn.available { display: inline-block; }
   .undo-btn:hover { border-color: #f0c040; color: #f0c040; }
+  .today-complete-cb.round { border-radius: 50%; width: 16px; height: 16px; margin-top: 3px; }
+  .today-item.glued { margin-left: 6.5rem; }
+  @media (max-width: 500px) { .today-item.glued { margin-left: 2.25rem; } }
   .today-drag-handle { width: 1.4rem; align-self: stretch; cursor: grab; flex-shrink: 0; }
   .today-drag-handle:active { cursor: grabbing; }
   .today-item { position: relative; }
@@ -134,6 +137,8 @@
   .tl-log-row { font-family: monospace; font-size: 0.78rem; color: var(--ink-light); overflow-x: auto; white-space: nowrap; }
   .tl-log-meta { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; color: var(--ink-faint); margin-top: 2px; }
 
+  .board-wb-wrap { margin-bottom: 1.25rem; }
+  .board-wb { height: 90px; min-height: 60px; }
   .board-tabs { display: flex; gap: 0; margin-bottom: 1.75rem; border-bottom: 1px solid var(--line); overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; user-select: none; }
   .board-tabs::-webkit-scrollbar { display: none; }
 
@@ -384,6 +389,14 @@
 
   #journal-view, #journal-page-view, #legacy-view { display: none; }
 
+  .budget-btn { display: block; margin: 0 auto 1.25rem; font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: 0.05em; padding: 0.7rem 2.5rem; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--ink); cursor: pointer; transition: all 0.15s; }
+  .budget-btn:hover { border-color: #f0c040; color: #f0c040; }
+  #budget-view, #budget-legacy-view { display: none; }
+  .budget-date-header { font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--ink); border-bottom: 1px solid var(--line); padding-bottom: 0.6rem; margin-bottom: 0.75rem; }
+  .budget-body { width: 100%; min-height: 200px; border: none; background: transparent; outline: none; resize: vertical; font-family: 'DM Sans', sans-serif; font-size: 1rem; color: var(--ink); line-height: 1.6; }
+  .budget-body::placeholder { color: var(--ink-faint); font-style: italic; }
+  .budget-legacy-ta { width: 100%; min-height: 300px; max-height: 60vh; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0.75rem; font-family: monospace; font-size: 0.85rem; color: var(--ink); outline: none; resize: vertical; }
+
   .journal-whiteboard-wrap { margin-bottom: 1.5rem; }
   .journal-whiteboard { width: 100%; height: 25vh; min-height: 160px; resize: vertical; background: var(--paper); border: 1px solid var(--line); box-shadow: var(--shadow); padding: 1rem 1.25rem; font-family: 'DM Sans', sans-serif; font-size: 1rem; color: var(--ink); outline: none; }
   .journal-whiteboard::placeholder { color: var(--ink-faint); font-style: italic; }
@@ -480,6 +493,9 @@
 
   <div id="tasks-view">
     <div class="board-tabs" id="board-tabs"></div>
+    <div class="board-wb-wrap">
+      <textarea id="board-whiteboard" class="journal-whiteboard board-wb" placeholder="Board scratchpad…" oninput="onBoardWbInput()"></textarea>
+    </div>
     <div class="paper" id="paper-content"></div>
   </div>
 
@@ -501,6 +517,7 @@
   </div>
 
   <div id="journal-view">
+    <button class="budget-btn" onclick="showView('budget')">Budget Notes</button>
     <div class="journal-whiteboard-wrap">
       <textarea id="whiteboard-input" class="journal-whiteboard" placeholder="Scratchpad — jot anything here…" oninput="onWhiteboardInput()"></textarea>
     </div>
@@ -515,6 +532,36 @@
       <div class="journal-entry-actions">
         <button class="journal-btn secondary" onclick="showView('journalpage')">Journal</button>
         <button class="journal-btn" onclick="submitJournalEntry()">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="budget-view">
+    <div class="journal-page-topbar">
+      <button class="journal-back-btn" onclick="showView('journal')">← Back</button>
+      <div class="journal-page-title">Budget Notes</div>
+      <button class="journal-legacy-btn" onclick="showView('budget-legacy')">View</button>
+    </div>
+    <div class="paper journal-entry-paper">
+      <div class="budget-date-header" id="budget-date"></div>
+      <textarea id="budget-body" class="budget-body" placeholder="Restaurant names, dating or social, business expenses to flag…"></textarea>
+      <div class="journal-entry-actions">
+        <button class="journal-btn" onclick="submitBudgetNote()">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="budget-legacy-view">
+    <div class="journal-page-topbar">
+      <button class="journal-back-btn" onclick="showView('budget')">← Back</button>
+      <div class="journal-page-title">Budget Legacy</div>
+      <div style="width:64px"></div>
+    </div>
+    <div class="paper journal-entry-paper">
+      <textarea id="budget-legacy-ta" class="budget-legacy-ta" readonly></textarea>
+      <div class="journal-entry-actions">
+        <button class="journal-btn secondary" id="budget-edit-discard" style="display:none" onclick="budgetDiscard()">Cancel</button>
+        <button class="journal-btn secondary" id="budget-edit-btn" onclick="budgetToggleEdit()">Edit</button>
       </div>
     </div>
   </div>
@@ -1035,7 +1082,7 @@ async function loadAll() {
   }
 }
 
-const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view', timelog: 'timelog-view', 'timelog-legacy': 'timelog-legacy-view', habits: 'habits-view', 'habits-legacy': 'habits-legacy-view', 'habits-manage': 'habits-manage-view', 'habits-archive': 'habits-archive-view', math: 'math-view', 'math-log': 'math-log-view' };
+const VIEW_IDS = { today: 'today-view', tasks: 'tasks-view', history: 'history-view', trash: 'trash-view', journal: 'journal-view', journalpage: 'journal-page-view', legacy: 'legacy-view', timelog: 'timelog-view', 'timelog-legacy': 'timelog-legacy-view', habits: 'habits-view', 'habits-legacy': 'habits-legacy-view', 'habits-manage': 'habits-manage-view', 'habits-archive': 'habits-archive-view', math: 'math-view', 'math-log': 'math-log-view', budget: 'budget-view', 'budget-legacy': 'budget-legacy-view' };
 
 function showView(v) {
   currentView = v;
@@ -1048,7 +1095,7 @@ function showView(v) {
   document.getElementById('sub-nav')?.classList.toggle('visible', v === 'tasks' || v === 'history' || v === 'trash');
   document.getElementById('btn-tasks')?.classList.toggle('active', v === 'tasks' || v === 'history' || v === 'trash');
   const jBtn = document.getElementById('journal-icon-btn');
-  if (jBtn) jBtn.classList.toggle('active', v === 'journal' || v === 'journalpage' || v === 'legacy');
+  if (jBtn) jBtn.classList.toggle('active', v === 'journal' || v === 'journalpage' || v === 'legacy' || v === 'budget' || v === 'budget-legacy');
   const cBtn = document.getElementById('clock-icon-btn');
   if (cBtn) cBtn.classList.toggle('active', v === 'timelog' || v === 'timelog-legacy');
 
@@ -1076,6 +1123,8 @@ function showView(v) {
   if (v === 'habits-archive') renderHabitsArchive();
   if (v === 'math') mathOpenView();
   if (v === 'math-log') renderMathLog();
+  if (v === 'budget') openBudgetForm();
+  if (v === 'budget-legacy') renderBudgetLegacy();
   document.getElementById('brain-icon-btn')?.classList.toggle('active', v === 'math' || v === 'math-log');
   if (v === 'timelog' && !tlInT) setTimeout(() => document.getElementById('tl-cat')?.focus(), 100);
 }
@@ -1143,6 +1192,7 @@ function confirmDeleteBoard(id, name) {
 }
 
 function renderPaper() {
+  loadBoardWhiteboard();
   const el = document.getElementById('paper-content');
   if (!boards.length) { el.innerHTML = '<p class="empty">No boards yet — add one above.</p>'; return; }
   const boardTasks = tasks.filter(t => t.board_id === activeBoard && !t.completed).sort((a,b) => (a.position||0) - (b.position||0));
@@ -1409,11 +1459,33 @@ function renderToday() {
         <span>${board ? escHtml(board.name) : 'Unknown'}</span>
       </span></div>`;
 
-    // Combined, ordered list: tasks and subtasks interleave by saved today_position
+    // Subtasks whose parent task is ALSO flagged glue under the parent; others stand alone
+    const flaggedTaskIds = new Set(group.tasks.map(t => t.id));
+    const glued = {}; // parent task id -> subs
+    const standaloneSubs = [];
+    group.subs.forEach(entry => {
+      if (entry.parent && flaggedTaskIds.has(entry.parent.id)) {
+        (glued[entry.parent.id] = glued[entry.parent.id] || []).push(entry);
+      } else standaloneSubs.push(entry);
+    });
+    Object.values(glued).forEach(list =>
+      list.sort((a, b) => (a.sub.today_position ?? 99999) - (b.sub.today_position ?? 99999)));
+
     const items = [
       ...group.tasks.map(t => ({ kind: 'task', id: t.id, obj: t })),
-      ...group.subs.map(({ sub, parent }) => ({ kind: 'subtask', id: sub.id, obj: sub, parent }))
+      ...standaloneSubs.map(({ sub, parent }) => ({ kind: 'subtask', id: sub.id, obj: sub, parent }))
     ].sort((a, b) => (a.obj.today_position ?? 99999) - (b.obj.today_position ?? 99999));
+
+    const subRow = (sub, parent, gluedChild) => `
+        <div class="today-item is-subtask${gluedChild ? ' glued' : ''}" data-kind="subtask" data-id="${sub.id}">
+          ${gluedChild ? '' : '<div class="today-drag-handle"></div>'}
+          <div class="today-complete-cb round${sub.completed ? ' checked' : ''}" onclick="toggleSubtaskComplete('${sub.id}')"></div>
+          <div style="flex:1">
+            ${gluedChild ? '' : `<div class="today-context">Subtask of: ${parent ? escHtml(parent.title) : 'Unknown task'}</div>`}
+            <div class="today-title${sub.completed ? ' done' : ''}">${escHtml(sub.title)}</div>
+          </div>
+          <div class="today-cb checked" title="Remove from Do Today" onclick="removeFromToday('subtask','${sub.id}')"></div>
+        </div>`;
 
     items.forEach(it => {
       if (it.kind === 'task') {
@@ -1427,18 +1499,9 @@ function renderToday() {
           </div>
           <div class="today-cb checked" title="Remove from Do Today" onclick="removeFromToday('task','${t.id}')"></div>
         </div>`;
+        (glued[t.id] || []).forEach(({ sub, parent }) => { html += subRow(sub, parent, true); });
       } else {
-        const sub = it.obj, parent = it.parent;
-        html += `
-        <div class="today-item is-subtask" data-kind="subtask" data-id="${sub.id}">
-          <div class="today-drag-handle"></div>
-          <div class="today-complete-cb${sub.completed ? ' checked' : ''}" onclick="toggleSubtaskComplete('${sub.id}')"></div>
-          <div style="flex:1">
-            <div class="today-context">Subtask of: ${parent ? escHtml(parent.title) : 'Unknown task'}</div>
-            <div class="today-title${sub.completed ? ' done' : ''}">${escHtml(sub.title)}</div>
-          </div>
-          <div class="today-cb checked" title="Remove from Do Today" onclick="removeFromToday('subtask','${sub.id}')"></div>
-        </div>`;
+        html += subRow(it.obj, it.parent, false);
       }
     });
 
@@ -1883,7 +1946,8 @@ function setupTaskDrag() {
       item.classList.remove('drag-over-top', 'drag-over-bottom');
 
       // Reorder in local array
-      const boardTasks = tasks.filter(t => t.board_id === activeBoard && !t.completed && !t.is_deleted);
+      const boardTasks = tasks.filter(t => t.board_id === activeBoard && !t.completed && !t.is_deleted)
+        .sort((a,b) => (a.position||0) - (b.position||0)); // match the rendered order
       const fromIdx = boardTasks.findIndex(t => t.id === draggedId);
       const toIdx = boardTasks.findIndex(t => t.id === droppedOnId);
       if (fromIdx === -1 || toIdx === -1) return;
@@ -1967,7 +2031,8 @@ function setupSubtaskDrag(taskId) {
       const insertBefore = e.clientY < rect.top + rect.height / 2;
       row.classList.remove('drag-over-top', 'drag-over-bottom');
 
-      const taskSubs = subtasks.filter(s => s.task_id === taskId);
+      const taskSubs = subtasks.filter(s => s.task_id === taskId)
+        .sort((a,b) => (a.position||0) - (b.position||0)); // match the rendered order
       const fromIdx = taskSubs.findIndex(s => s.id === draggedId);
       const toIdx = taskSubs.findIndex(s => s.id === sid);
       if (fromIdx === -1 || toIdx === -1) return;
@@ -1991,6 +2056,116 @@ function setupSubtaskDrag(taskId) {
   });
 }
 
+
+
+
+// ---- budget notes ----
+let budgetEditing = false;
+let budgetOriginal = '';
+
+function openBudgetForm() {
+  ensureJournalLoaded();
+  const now = new Date();
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  document.getElementById('budget-date').textContent =
+    days[now.getDay()] + ' ' + (now.getMonth()+1) + '/' + now.getDate() + '/' + String(now.getFullYear()).slice(2);
+  setTimeout(() => document.getElementById('budget-body')?.focus(), 80);
+}
+
+async function submitBudgetNote() {
+  await ensureJournalLoaded();
+  const body = document.getElementById('budget-body').value.trim();
+  if (!body) { toast('Nothing to save'); return; }
+  const header = document.getElementById('budget-date').textContent;
+  const rows = await api('GET', 'journal_data?select=budget&limit=1');
+  const existing = (rows && rows[0] && rows[0].budget) || '';
+  const entry = header + '\n' + body;
+  const updated = existing ? existing + '\n\n' + entry : entry; // oldest at top
+  try {
+    await api('PATCH', `journal_data?id=eq.${journalRowId}`, { budget: updated });
+  } catch(e) {
+    showFailModal('Budget note failed to save. Copy it before closing.', header + '\n' + body);
+    return;
+  }
+  document.getElementById('budget-body').value = '';
+  toast('Budget note saved');
+}
+
+async function renderBudgetLegacy() {
+  budgetEditing = false;
+  const ta = document.getElementById('budget-legacy-ta');
+  ta.readOnly = true;
+  document.getElementById('budget-edit-btn').textContent = 'Edit';
+  document.getElementById('budget-edit-discard').style.display = 'none';
+  ta.value = 'Loading…';
+  const rows = await api('GET', 'journal_data?select=budget&limit=1');
+  ta.value = (rows && rows[0] && rows[0].budget) || '';
+  if (!ta.value) ta.value = '';
+}
+
+function budgetToggleEdit() {
+  const ta = document.getElementById('budget-legacy-ta');
+  const btn = document.getElementById('budget-edit-btn');
+  const discard = document.getElementById('budget-edit-discard');
+  if (!budgetEditing) {
+    budgetEditing = true;
+    budgetOriginal = ta.value;
+    ta.readOnly = false;
+    ta.focus();
+    btn.textContent = 'Save';
+    discard.style.display = '';
+  } else {
+    budgetEditing = false;
+    ta.readOnly = true;
+    btn.textContent = 'Edit';
+    discard.style.display = 'none';
+    api('PATCH', `journal_data?id=eq.${journalRowId}`, { budget: ta.value }).then(() => toast('Budget legacy saved'));
+  }
+}
+
+function budgetDiscard() {
+  const ta = document.getElementById('budget-legacy-ta');
+  ta.value = budgetOriginal;
+  budgetEditing = false;
+  ta.readOnly = true;
+  document.getElementById('budget-edit-btn').textContent = 'Edit';
+  document.getElementById('budget-edit-discard').style.display = 'none';
+  toast('Changes discarded');
+}
+
+// ---- per-board whiteboard ----
+let boardWbSaveTimer = null;
+let boardWbLoadedFor = null;
+
+function loadBoardWhiteboard() {
+  const el = document.getElementById('board-whiteboard');
+  if (!el) return;
+  const b = boards.find(x => x.id === activeBoard);
+  boardWbLoadedFor = activeBoard;
+  el.value = (b && b.whiteboard) || '';
+  const savedH = localStorage.getItem('boardWbH-' + activeBoard);
+  el.style.height = savedH || '';
+  if (!el._wbObs) {
+    el._wbObs = new ResizeObserver(() => {
+      if (boardWbLoadedFor) localStorage.setItem('boardWbH-' + boardWbLoadedFor, el.style.height);
+    });
+    el._wbObs.observe(el);
+  }
+}
+
+function onBoardWbInput() {
+  clearTimeout(boardWbSaveTimer);
+  boardWbSaveTimer = setTimeout(saveBoardWhiteboard, 800);
+}
+
+async function saveBoardWhiteboard() {
+  const el = document.getElementById('board-whiteboard');
+  const bid = boardWbLoadedFor;
+  if (!el || !bid) return;
+  const b = boards.find(x => x.id === bid);
+  if (b) b.whiteboard = el.value;
+  await api('PATCH', `boards?id=eq.${bid}`, { whiteboard: el.value });
+}
 
 // JOURNAL
 let journalRowId = null;
@@ -2608,17 +2783,19 @@ async function renderHabits() {
   const el = document.getElementById('habits-content');
   let html = '';
   ['AM','DAY','PM'].forEach(period => {
-    const scheduled = habits.filter(h => h.period === period && habitScheduledOn(h, dateStr));
+    const scheduled = habits.filter(h => h.period === period && habitScheduledOn(h, dateStr))
+      .sort((a,b) => (a.position||0) - (b.position||0));
     // also show any habit with an entry this date (archived, or schedule since changed) — the lived record stays visible
     const withEntry = habits.filter(h => h.period === period && entries[h.id] && !scheduled.includes(h));
     const list = [...scheduled, ...withEntry];
     html += `<div class="habits-section-label">${period}</div>`;
     if (!list.length) { html += '<div class="habits-empty">Nothing scheduled.</div>'; return; }
-    list.forEach(h => {
+    list.forEach((h, hi) => {
       const e = entries[h.id];
       const result = e ? e.result : '';
       const nameCls = result === 'YES' ? ' answered-yes' : (result === 'NO' ? ' answered-no' : '');
       html += `<div class="habit-row">
+        <button class="today-board-up" onclick="moveHabitUp('${h.id}')" ${hi === 0 ? 'disabled' : ''} title="Move up">▲</button>
         <span class="habit-name${nameCls}">${escHtml(h.name)}</span>
         <span class="habit-cb-label">Yes</span>
         <div class="habit-cb yes${result==='YES'?' checked':''}" ${isFuture ? 'style="opacity:0.3;cursor:not-allowed;"' : `onclick="setHabitResult('${h.id}','YES')"`}></div>
@@ -2701,6 +2878,23 @@ async function setHabitResult(habitId, clicked) {
     habitEntriesCache[dateStr] = entries;
   }
   renderHabits();
+}
+
+async function moveHabitUp(id) {
+  const h = habits.find(x => x.id === id);
+  if (!h) return;
+  const periodList = habits.filter(x => x.period === h.period && !x.archived)
+    .sort((a,b) => (a.position||0) - (b.position||0));
+  const idx = periodList.findIndex(x => x.id === id);
+  if (idx <= 0) return;
+  [periodList[idx-1], periodList[idx]] = [periodList[idx], periodList[idx-1]];
+  const patches = [];
+  periodList.forEach((x, i) => {
+    if (x.position !== i) { x.position = i; patches.push(api('PATCH', `habits?id=eq.${x.id}`, { position: i })); }
+  });
+  habits.sort((a,b) => (a.position||0) - (b.position||0));
+  renderHabits();
+  await Promise.all(patches);
 }
 
 function archiveHabit(id, name) {
@@ -2817,7 +3011,7 @@ async function renderHabitsManage() {
   const active = habits.filter(h => !h.archived);
   if (!active.length) { el.innerHTML = '<p class="empty" style="margin-left:0">No habits yet.</p>'; return; }
   const byPeriod = { AM: [], DAY: [], PM: [] };
-  active.forEach(h => (byPeriod[h.period] || byPeriod.DAY).push(h));
+  active.sort((a,b) => (a.position||0) - (b.position||0)).forEach(h => (byPeriod[h.period] || byPeriod.DAY).push(h));
   let html = '';
   ['AM','DAY','PM'].forEach(p => {
     if (!byPeriod[p].length) return;
