@@ -143,7 +143,7 @@
   .pad-btn.open { border-color: #f0c040; color: #f0c040; }
   .board-wb-wrap { display: none; margin-bottom: 1.25rem; }
   .board-wb-wrap.open { display: block; }
-  .board-wb { height: 90px; min-height: 0; }
+  .journal-whiteboard.board-wb { height: 2.6rem; min-height: 0; padding: 0.5rem 0.75rem; }
   .board-tabs { display: flex; gap: 0; margin-bottom: 1.75rem; border-bottom: 1px solid var(--line); overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; user-select: none; }
   .board-tabs::-webkit-scrollbar { display: none; }
 
@@ -625,7 +625,10 @@
           <button class="math-key submit" onclick="mathKey('enter')">✓</button>
         </div>
         <div class="math-stats" id="math-run-stats"></div>
-        <button class="math-end-btn" onclick="mathEnd()">End session</button>
+        <div style="display:flex;gap:0.75rem;justify-content:center;">
+          <button class="math-end-btn" onclick="mathSkip()">Skip</button>
+          <button class="math-end-btn" onclick="mathEnd()">End session</button>
+        </div>
       </div>
       <div id="math-done" style="display:none">
         <div class="math-summary" id="math-summary"></div>
@@ -748,7 +751,12 @@
       <div style="width:64px"></div>
     </div>
     <div class="paper tl-paper">
+      <div class="journal-page-topbar" style="justify-content:flex-end;gap:0.6rem;margin:0 0 0.5rem;">
+        <button class="task-action-btn" id="tl-edit-cancel" style="display:none" onclick="tlLegacyCancel()">Cancel</button>
+        <button class="task-action-btn" id="tl-edit-btn" onclick="tlLegacyToggleEdit()">Edit</button>
+      </div>
       <div id="tl-legacy-content"></div>
+      <textarea id="tl-legacy-ta" class="budget-legacy-ta" style="display:none"></textarea>
       <button class="delete-legacy-btn" onclick="tlDeleteAll()">Delete All</button>
     </div>
   </div>
@@ -2725,12 +2733,75 @@ function tlCopy() {
   toast('Copied to clipboard');
 }
 
+let tlLegacyRows = [];
+let tlLegacyEditing = false;
+
+function tlLegacyToggleEdit() {
+  const list = document.getElementById('tl-legacy-content');
+  const ta = document.getElementById('tl-legacy-ta');
+  const btn = document.getElementById('tl-edit-btn');
+  const cancel = document.getElementById('tl-edit-cancel');
+  if (!tlLegacyEditing) {
+    if (!tlLegacyRows.length) { toast('Nothing to edit'); return; }
+    tlLegacyEditing = true;
+    ta.value = tlLegacyRows.map(r => r.row_text).join('\n');
+    list.style.display = 'none';
+    ta.style.display = 'block';
+    ta.focus();
+    btn.textContent = 'Save';
+    cancel.style.display = '';
+  } else {
+    tlLegacySave();
+  }
+}
+
+async function tlLegacySave() {
+  const ta = document.getElementById('tl-legacy-ta');
+  const lines = ta.value.split('\n').map(l => l.trim()).filter(Boolean);
+  const patches = [];
+  const n = Math.min(lines.length, tlLegacyRows.length);
+  for (let i = 0; i < n; i++) {
+    if (lines[i] !== tlLegacyRows[i].row_text) {
+      patches.push(api('PATCH', `time_logs?id=eq.${tlLegacyRows[i].id}`, { row_text: lines[i] }));
+    }
+  }
+  for (let i = lines.length; i < tlLegacyRows.length; i++) {
+    patches.push(api('DELETE', `time_logs?id=eq.${tlLegacyRows[i].id}`));
+  }
+  for (let i = tlLegacyRows.length; i < lines.length; i++) {
+    patches.push(api('POST', 'time_logs', { row_text: lines[i] }));
+  }
+  await Promise.all(patches);
+  tlLegacyEditing = false;
+  document.getElementById('tl-edit-btn').textContent = 'Edit';
+  document.getElementById('tl-edit-cancel').style.display = 'none';
+  document.getElementById('tl-legacy-ta').style.display = 'none';
+  document.getElementById('tl-legacy-content').style.display = 'block';
+  renderTlLegacy();
+  toast('Time log saved');
+}
+
+function tlLegacyCancel() {
+  tlLegacyEditing = false;
+  document.getElementById('tl-edit-btn').textContent = 'Edit';
+  document.getElementById('tl-edit-cancel').style.display = 'none';
+  document.getElementById('tl-legacy-ta').style.display = 'none';
+  document.getElementById('tl-legacy-content').style.display = 'block';
+  toast('Changes discarded');
+}
+
 async function renderTlLegacy() {
+  tlLegacyEditing = false;
+  document.getElementById('tl-edit-btn').textContent = 'Edit';
+  document.getElementById('tl-edit-cancel').style.display = 'none';
+  document.getElementById('tl-legacy-ta').style.display = 'none';
+  document.getElementById('tl-legacy-content').style.display = 'block';
   const el = document.getElementById('tl-legacy-content');
   el.innerHTML = '<p class="empty" style="margin-left:0">Loading…</p>';
   const rows = await api('GET', 'time_logs?order=created_at.desc');
-  if (!rows || !rows.length) { el.innerHTML = '<p class="empty" style="margin-left:0">No entries yet.</p>'; return; }
+  if (!rows || !rows.length) { tlLegacyRows = []; el.innerHTML = '<p class="empty" style="margin-left:0">No entries yet.</p>'; return; }
   rows.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  tlLegacyRows = rows;
   el.innerHTML = rows.map(r => {
     const d = new Date(r.created_at);
     const label = d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' at ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
@@ -3270,6 +3341,8 @@ let mathPauseStart = null;
 let mathPromptShown = false;
 let mathProblems = []; // per-problem records for the session log
 let mathLevelStart = null;
+let mathSkipped = 0;
+let mathFacts = {}; // per-fact mastery records, key "M2x7"/"D2x7" -> {fc, dates:[], lm, lf}
 
 const MATH_OPS = ['add','sub','mul','div'];
 const MATH_SYM = { add:'+', sub:'−', mul:'×', div:'÷' };
@@ -3284,16 +3357,72 @@ async function mathLoadLevels() {
   if (rows && rows[0]) {
     mathLevelsRowId = rows[0].id;
     try { const p = JSON.parse(rows[0].levels); MATH_OPS.forEach(o => { if (p[o]) mathLevels[o] = p[o]; }); } catch(e){}
+    try { mathFacts = rows[0].facts ? JSON.parse(rows[0].facts) : {}; } catch(e){ mathFacts = {}; }
   }
 }
 
 async function mathSaveLevels() {
   if (!mathLevelsRowId) return;
-  await api('PATCH', `math_levels?id=eq.${mathLevelsRowId}`, { levels: JSON.stringify(mathLevels) });
+  await api('PATCH', `math_levels?id=eq.${mathLevelsRowId}`, { levels: JSON.stringify(mathLevels), facts: JSON.stringify(mathFacts) });
+}
+
+// ---- fact-mastery engine (single-digit MUL facts + their DIV inverses) ----
+const FACT_FAST_MS = 3000;   // "instinctive" bar
+const FACT_TIER_PCT = 0.9;   // unlock two-digit work at 90% mastered
+const FACT_PAIRS = [];
+for (let fa = 2; fa <= 9; fa++) for (let fb = fa; fb <= 9; fb++) FACT_PAIRS.push([fa, fb]);
+
+function factMastered(rec) {
+  return !!(rec && rec.fc >= 4 && (rec.dates || []).length >= 2 && (!rec.lm || (rec.lf && rec.lf > rec.lm)));
+}
+
+function factMasteredCount(prefix) {
+  return FACT_PAIRS.filter(([a, b]) => factMastered(mathFacts[prefix + a + 'x' + b])).length;
+}
+
+function factTierDone(prefix) {
+  return factMasteredCount(prefix) / FACT_PAIRS.length >= FACT_TIER_PCT;
+}
+
+function pickFactPair(prefix) {
+  const now = Date.now();
+  const weighted = FACT_PAIRS.map(([a, b]) => {
+    const rec = mathFacts[prefix + a + 'x' + b];
+    let w;
+    if (factMastered(rec)) w = 1;            // mastered: rare maintenance reps
+    else if (!rec) w = 4;                    // unseen
+    else w = 6;                              // seen, not yet mastered
+    if (a >= 6 || b >= 6) w += 3;            // the 6–9 families (your log's weak zone)
+    if (rec && rec.lm && now - rec.lm < 3 * 86400000) w += 4; // recently missed
+    return { a, b, w };
+  });
+  let total = weighted.reduce((s, x) => s + x.w, 0);
+  let r = Math.random() * total;
+  for (const x of weighted) { r -= x.w; if (r <= 0) return [x.a, x.b]; }
+  return weighted[weighted.length - 1] && [weighted[0].a, weighted[0].b];
+}
+
+function factRecord(key, kind, ms) {
+  // kind: 'fast' | 'slow' | 'miss' | 'skip'
+  const rec = mathFacts[key] || (mathFacts[key] = { fc: 0, dates: [], lm: null, lf: null });
+  const today = habitTodayStr();
+  if (kind === 'fast') {
+    rec.fc++;
+    rec.lf = Date.now();
+    if (!rec.dates.includes(today)) { rec.dates.push(today); if (rec.dates.length > 8) rec.dates.shift(); }
+  } else if (kind === 'miss') {
+    rec.lm = Date.now();
+    rec.fc = Math.max(0, rec.fc - 2);
+  } else if (kind === 'skip') {
+    rec.lm = Date.now();
+    rec.fc = Math.max(0, rec.fc - 1);
+  }
 }
 
 function mathLevelsLineText() {
-  return `Levels — ADD ${mathLevels.add} · SUB ${mathLevels.sub} · MUL ${mathLevels.mul} · DIV ${mathLevels.div}`;
+  const mulBit = factTierDone('M') ? `MUL ${mathLevels.mul}` : `MUL facts ${factMasteredCount('M')}/${FACT_PAIRS.length}`;
+  const divBit = factTierDone('D') ? `DIV ${mathLevels.div}` : `DIV facts ${factMasteredCount('D')}/${FACT_PAIRS.length}`;
+  return `Levels — ADD ${mathLevels.add} · SUB ${mathLevels.sub} · ${mulBit} · ${divBit}`;
 }
 
 async function mathOpenView() {
@@ -3304,13 +3433,41 @@ async function mathOpenView() {
 
 function mathNewProblem() {
   const op = MATH_OPS[mri(0, 3)];
-  const L = mathLevels[op];
-  let a, b, answer;
-  if (op === 'add') { a = mri(2, ADD_MAX[L-1]); b = mri(2, ADD_MAX[L-1]); answer = a + b; }
-  else if (op === 'sub') { a = mri(2, ADD_MAX[L-1]); b = mri(2, a); answer = a - b; }
-  else if (op === 'mul') { a = mri(2, MUL_MAX[L-1]); b = mri(2, MUL_MAX[L-1]); answer = a * b; }
-  else { b = mri(2, MUL_MAX[L-1]); answer = mri(2, MUL_MAX[L-1]); a = b * answer; }
-  mathCurrent = { a, b, op, answer, L };
+  let L = mathLevels[op];
+  let a, b, answer, factKey = null;
+  if (op === 'add') {
+    a = mri(2, ADD_MAX[L-1]); b = mri(2, ADD_MAX[L-1]);
+    // Bias hard toward carries — that's the actual skill gap in your log
+    if (Math.random() < 0.7) {
+      for (let t = 0; t < 15 && (a % 10) + (b % 10) < 10; t++) b = mri(2, ADD_MAX[L-1]);
+    }
+    answer = a + b;
+  }
+  else if (op === 'sub') {
+    a = mri(2, ADD_MAX[L-1]); b = mri(2, a);
+    // Bias toward borrows
+    if (Math.random() < 0.7 && a > 10) {
+      for (let t = 0; t < 15 && (a % 10) >= (b % 10); t++) b = mri(2, a);
+    }
+    answer = a - b;
+  }
+  else if (op === 'mul') {
+    if (!factTierDone('M')) {
+      const [fa, fb] = pickFactPair('M');
+      factKey = 'M' + fa + 'x' + fb;
+      if (Math.random() < 0.5) { a = fa; b = fb; } else { a = fb; b = fa; }
+      answer = a * b; L = 2;
+    } else { a = mri(2, MUL_MAX[L-1]); b = mri(2, MUL_MAX[L-1]); answer = a * b; }
+  }
+  else {
+    if (!factTierDone('D')) {
+      const [fa, fb] = pickFactPair('D');
+      factKey = 'D' + fa + 'x' + fb;
+      if (Math.random() < 0.5) { b = fa; answer = fb; } else { b = fb; answer = fa; }
+      a = b * answer; L = 2;
+    } else { b = mri(2, MUL_MAX[L-1]); answer = mri(2, MUL_MAX[L-1]); a = b * answer; }
+  }
+  mathCurrent = { a, b, op, answer, L, factKey };
   mathInput = '';
   mathProblemStart = Date.now();
   mathProblemLimit = (8 + 2 * L) * 1000; // 10s at level 1 → 28s at level 10
@@ -3322,7 +3479,7 @@ function mathNewProblem() {
 
 function mathStart() {
   mathRunning = true; mathLocked = false;
-  mathAnswered = 0; mathCorrect = 0;
+  mathAnswered = 0; mathCorrect = 0; mathSkipped = 0;
   mathStreaks = { add:{r:0,w:0}, sub:{r:0,w:0}, mul:{r:0,w:0}, div:{r:0,w:0} };
   mathStartTime = Date.now();
   mathPaused = false; mathPromptShown = false;
@@ -3366,17 +3523,21 @@ function mathTimeout() {
   const op = mathCurrent.op;
   const st = mathStreaks[op];
   mathAnswered++;
-  st.w++; st.r = 0;
   let changed = false;
-  if (st.w >= 2 && mathLevels[op] > 1) { mathLevels[op]--; st.w = 0; changed = true; }
+  if (mathCurrent.factKey) { changed = true; }
+  else {
+    st.w++; st.r = 0;
+    if (st.w >= 2 && mathLevels[op] > 1) { mathLevels[op]--; st.w = 0; changed = true; }
+  }
   const p = document.getElementById('math-problem');
   p.classList.add('flash-wrong');
   p.textContent = `${mathCurrent.a} ${MATH_SYM[op]} ${mathCurrent.b} = ${mathCurrent.answer}`;
   document.getElementById('math-countdown').textContent = "Time's up";
+  if (mathCurrent.factKey) factRecord(mathCurrent.factKey, 'miss');
   mathProblems.push({
     op, L: mathCurrent.L, a: mathCurrent.a, b: mathCurrent.b,
     answer: mathCurrent.answer, guess: null, correct: false,
-    ms: mathProblemLimit, timeout: true
+    ms: mathProblemLimit, timeout: true, skip: false
   });
   mathLocked = true;
   setTimeout(() => { mathLocked = false; if (mathRunning && !mathPaused) mathNewProblem(); }, 1100);
@@ -3400,7 +3561,7 @@ function mathContinueFromPrompt(keepGoing) {
 function mathRunStats() {
   const acc = mathAnswered ? Math.round(100 * mathCorrect / mathAnswered) : 0;
   document.getElementById('math-run-stats').textContent =
-    `${mathCorrect}/${mathAnswered} correct${mathAnswered ? ` · ${acc}%` : ''}`;
+    `${mathCorrect}/${mathAnswered} correct${mathAnswered ? ` · ${acc}%` : ''}${mathSkipped ? ` · ${mathSkipped} skipped` : ''}`;
 }
 
 function mathKey(k) {
@@ -3412,26 +3573,38 @@ function mathKey(k) {
 }
 
 function mathSubmit() {
-  if (!mathCurrent || mathInput === '') return;
+  if (!mathCurrent) return;
+  if (mathInput === '') { mathSkip(); return; } // empty Enter/✓ = skip
   const guess = parseInt(mathInput, 10);
   const op = mathCurrent.op;
   const st = mathStreaks[op];
+  const factKey = mathCurrent.factKey;
   mathAnswered++;
   const p = document.getElementById('math-problem');
   let changed = false;
+  const elapsed = Date.now() - mathProblemStart;
   if (guess === mathCurrent.answer) {
     mathCorrect++;
-    const elapsed = Date.now() - mathProblemStart;
-    const fast = elapsed <= mathProblemLimit * 0.5;
-    st.w = 0;
-    if (fast) st.r++; // only quick answers count toward promotion; slow-correct holds the streak
-    if (st.r >= 3 && mathLevels[op] < 10) { mathLevels[op]++; st.r = 0; changed = true; }
+    const fast = elapsed <= (factKey ? FACT_FAST_MS : mathProblemLimit * 0.5);
+    if (factKey) {
+      factRecord(factKey, fast ? 'fast' : 'slow', elapsed);
+      changed = true; // persist fact progress
+    } else {
+      st.w = 0;
+      if (fast) st.r++; // only quick answers count toward promotion; slow-correct holds the streak
+      if (st.r >= 3 && mathLevels[op] < 10) { mathLevels[op]++; st.r = 0; changed = true; }
+    }
     p.classList.add('flash-right');
     mathLocked = true;
     setTimeout(() => { mathLocked = false; if (mathRunning && !mathPaused) mathNewProblem(); }, 250);
   } else {
-    st.w++; st.r = 0;
-    if (st.w >= 2 && mathLevels[op] > 1) { mathLevels[op]--; st.w = 0; changed = true; }
+    if (factKey) {
+      factRecord(factKey, 'miss', elapsed);
+      changed = true;
+    } else {
+      st.w++; st.r = 0;
+      if (st.w >= 2 && mathLevels[op] > 1) { mathLevels[op]--; st.w = 0; changed = true; }
+    }
     p.classList.add('flash-wrong');
     p.textContent = `${mathCurrent.a} ${MATH_SYM[op]} ${mathCurrent.b} = ${mathCurrent.answer}`;
     mathLocked = true;
@@ -3440,8 +3613,36 @@ function mathSubmit() {
   mathProblems.push({
     op, L: mathCurrent.L, a: mathCurrent.a, b: mathCurrent.b,
     answer: mathCurrent.answer, guess, correct: guess === mathCurrent.answer,
-    ms: Date.now() - mathProblemStart, timeout: false
+    ms: elapsed, timeout: false, skip: false
   });
+  mathRunStats();
+  if (changed) mathSaveLevels();
+}
+
+function mathSkip() {
+  if (!mathCurrent || mathLocked || mathPaused || !mathRunning) return;
+  const op = mathCurrent.op;
+  const st = mathStreaks[op];
+  const factKey = mathCurrent.factKey;
+  mathAnswered++;
+  mathSkipped++;
+  let changed = false;
+  if (factKey) { factRecord(factKey, 'skip'); changed = true; }
+  else {
+    st.w++; st.r = 0; // skipping means too hard — levels respond like a miss
+    if (st.w >= 2 && mathLevels[op] > 1) { mathLevels[op]--; st.w = 0; changed = true; }
+  }
+  const p = document.getElementById('math-problem');
+  p.classList.add('flash-wrong');
+  p.textContent = `${mathCurrent.a} ${MATH_SYM[op]} ${mathCurrent.b} = ${mathCurrent.answer}`;
+  document.getElementById('math-countdown').textContent = 'Skipped';
+  mathProblems.push({
+    op, L: mathCurrent.L, a: mathCurrent.a, b: mathCurrent.b,
+    answer: mathCurrent.answer, guess: null, correct: false,
+    ms: Date.now() - mathProblemStart, timeout: false, skip: true
+  });
+  mathLocked = true;
+  setTimeout(() => { mathLocked = false; if (mathRunning && !mathPaused) mathNewProblem(); }, 1100);
   mathRunStats();
   if (changed) mathSaveLevels();
 }
@@ -3456,9 +3657,11 @@ function buildMathSessionText(seconds) {
   const dur = Math.floor(seconds/60) + ':' + String(seconds%60).padStart(2,'0');
   const acc = mathAnswered ? Math.round(100 * mathCorrect / mathAnswered) : 0;
   const opBits = MATH_OPS.map(o => o.toUpperCase() + ' ' + (mathLevelStart ? mathLevelStart[o] : '?') + '→' + mathLevels[o]).join(' · ');
-  const header = `SESSION ${dateFmt} ${timeFmt} · ${dur} · ${mathAnswered} answered · ${mathCorrect} correct (${acc}%) · ${opBits}`;
+  const skipBit = mathSkipped ? ` · ${mathSkipped} skipped` : '';
+  const header = `SESSION ${dateFmt} ${timeFmt} · ${dur} · ${mathAnswered} answered · ${mathCorrect} correct (${acc}%)${skipBit} · ${opBits}`;
   const lines = mathProblems.map(p => {
     const secs = (p.ms/1000).toFixed(1) + 's';
+    if (p.skip) return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} — (${p.answer}) SKIP`;
     if (p.timeout) return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} — (${p.answer}) TIMEOUT`;
     if (p.correct) return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} = ${p.answer} ✓ ${secs}`;
     return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} = ${p.guess} ✗ (${p.answer}) ${secs}`;
