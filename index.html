@@ -3343,6 +3343,9 @@ let mathProblems = []; // per-problem records for the session log
 let mathLevelStart = null;
 let mathSkipped = 0;
 let mathFacts = {}; // per-fact mastery records, key "M2x7"/"D2x7" -> {fc, dates:[], lm, lf}
+let mathRetype = null;      // problem to force-repeat immediately after a fact miss (practice rep)
+let mathRequeue = [];       // [{problem, due}] — missed/skipped facts re-served ~4-6 problems later
+let mathProblemCount = 0;   // problems served this session
 
 const MATH_OPS = ['add','sub','mul','div'];
 const MATH_SYM = { add:'+', sub:'−', mul:'×', div:'÷' };
@@ -3431,7 +3434,26 @@ async function mathOpenView() {
   if (line) line.textContent = mathLevelsLineText();
 }
 
+function mathServe(problem, isPractice) {
+  mathCurrent = { ...problem, practice: !!isPractice };
+  mathInput = '';
+  mathProblemStart = Date.now();
+  mathProblemLimit = (8 + 2 * problem.L) * 1000;
+  mathProblemCount++;
+  const p = document.getElementById('math-problem');
+  p.textContent = `${problem.a} ${MATH_SYM[problem.op]} ${problem.b}`;
+  p.classList.remove('flash-right','flash-wrong');
+  document.getElementById('math-answer').innerHTML = '&nbsp;';
+  const cd = document.getElementById('math-countdown');
+  if (isPractice) { cd.textContent = 'Again — type it'; cd.classList.remove('low'); }
+}
+
 function mathNewProblem() {
+  // 1) Forced retype after a fact miss — same problem, right now
+  if (mathRetype) { const pr = mathRetype; mathRetype = null; mathServe(pr, true); return; }
+  // 2) A missed/skipped fact whose revisit is due
+  const dueIdx = mathRequeue.findIndex(q => mathProblemCount >= q.due);
+  if (dueIdx >= 0) { const q = mathRequeue.splice(dueIdx, 1)[0]; mathServe(q.problem, false); return; }
   const op = MATH_OPS[mri(0, 3)];
   let L = mathLevels[op];
   let a, b, answer, factKey = null;
@@ -3467,19 +3489,20 @@ function mathNewProblem() {
       a = b * answer; L = 2;
     } else { b = mri(2, MUL_MAX[L-1]); answer = mri(2, MUL_MAX[L-1]); a = b * answer; }
   }
-  mathCurrent = { a, b, op, answer, L, factKey };
-  mathInput = '';
-  mathProblemStart = Date.now();
-  mathProblemLimit = (8 + 2 * L) * 1000; // 10s at level 1 → 28s at level 10
-  const p = document.getElementById('math-problem');
-  p.textContent = `${a} ${MATH_SYM[op]} ${b}`;
-  p.classList.remove('flash-right','flash-wrong');
-  document.getElementById('math-answer').innerHTML = '&nbsp;';
+  mathServe({ a, b, op, answer, L, factKey }, false);
+}
+
+function mathQueueRevisit(cur) {
+  mathRequeue.push({
+    problem: { a: cur.a, b: cur.b, op: cur.op, answer: cur.answer, L: cur.L, factKey: cur.factKey },
+    due: mathProblemCount + 4 + mri(0, 2) // resurfaces ~4-6 problems later
+  });
 }
 
 function mathStart() {
   mathRunning = true; mathLocked = false;
   mathAnswered = 0; mathCorrect = 0; mathSkipped = 0;
+  mathRetype = null; mathRequeue = []; mathProblemCount = 0;
   mathStreaks = { add:{r:0,w:0}, sub:{r:0,w:0}, mul:{r:0,w:0}, div:{r:0,w:0} };
   mathStartTime = Date.now();
   mathPaused = false; mathPromptShown = false;
@@ -3533,14 +3556,20 @@ function mathTimeout() {
   p.classList.add('flash-wrong');
   p.textContent = `${mathCurrent.a} ${MATH_SYM[op]} ${mathCurrent.b} = ${mathCurrent.answer}`;
   document.getElementById('math-countdown').textContent = "Time's up";
-  if (mathCurrent.factKey) factRecord(mathCurrent.factKey, 'miss');
+  let toShowMs = 1100;
+  if (mathCurrent.factKey) {
+    if (!mathCurrent.practice) factRecord(mathCurrent.factKey, 'miss');
+    toShowMs = 2600;
+    mathRetype = { a: mathCurrent.a, b: mathCurrent.b, op, answer: mathCurrent.answer, L: mathCurrent.L, factKey: mathCurrent.factKey };
+    if (!mathCurrent.practice) mathQueueRevisit(mathCurrent);
+  }
   mathProblems.push({
     op, L: mathCurrent.L, a: mathCurrent.a, b: mathCurrent.b,
     answer: mathCurrent.answer, guess: null, correct: false,
-    ms: mathProblemLimit, timeout: true, skip: false
+    ms: mathProblemLimit, timeout: true, skip: false, practice: !!mathCurrent.practice
   });
   mathLocked = true;
-  setTimeout(() => { mathLocked = false; if (mathRunning && !mathPaused) mathNewProblem(); }, 1100);
+  setTimeout(() => { mathLocked = false; if (mathRunning && !mathPaused) mathNewProblem(); }, toShowMs);
   mathRunStats();
   if (changed) mathSaveLevels();
 }
@@ -3587,8 +3616,9 @@ function mathSubmit() {
     mathCorrect++;
     const fast = elapsed <= (factKey ? FACT_FAST_MS : mathProblemLimit * 0.5);
     if (factKey) {
-      factRecord(factKey, fast ? 'fast' : 'slow', elapsed);
-      changed = true; // persist fact progress
+      // Practice retypes are rehearsal, not proof — they never advance mastery
+      if (!mathCurrent.practice) factRecord(factKey, fast ? 'fast' : 'slow', elapsed);
+      changed = true;
     } else {
       st.w = 0;
       if (fast) st.r++; // only quick answers count toward promotion; slow-correct holds the streak
@@ -3598,9 +3628,15 @@ function mathSubmit() {
     mathLocked = true;
     setTimeout(() => { mathLocked = false; if (mathRunning && !mathPaused) mathNewProblem(); }, 250);
   } else {
+    let showMs = 1100;
     if (factKey) {
-      factRecord(factKey, 'miss', elapsed);
+      if (!mathCurrent.practice) factRecord(factKey, 'miss', elapsed);
       changed = true;
+      // Learning moment: show the answer long enough to say it in your head,
+      // then the same problem comes right back, and again a few problems later
+      showMs = 2600;
+      mathRetype = { a: mathCurrent.a, b: mathCurrent.b, op, answer: mathCurrent.answer, L: mathCurrent.L, factKey };
+      if (!mathCurrent.practice) mathQueueRevisit(mathCurrent);
     } else {
       st.w++; st.r = 0;
       if (st.w >= 2 && mathLevels[op] > 1) { mathLevels[op]--; st.w = 0; changed = true; }
@@ -3608,12 +3644,12 @@ function mathSubmit() {
     p.classList.add('flash-wrong');
     p.textContent = `${mathCurrent.a} ${MATH_SYM[op]} ${mathCurrent.b} = ${mathCurrent.answer}`;
     mathLocked = true;
-    setTimeout(() => { mathLocked = false; if (mathRunning && !mathPaused) mathNewProblem(); }, 1100);
+    setTimeout(() => { mathLocked = false; if (mathRunning && !mathPaused) mathNewProblem(); }, showMs);
   }
   mathProblems.push({
     op, L: mathCurrent.L, a: mathCurrent.a, b: mathCurrent.b,
     answer: mathCurrent.answer, guess, correct: guess === mathCurrent.answer,
-    ms: elapsed, timeout: false, skip: false
+    ms: elapsed, timeout: false, skip: false, practice: !!mathCurrent.practice
   });
   mathRunStats();
   if (changed) mathSaveLevels();
@@ -3636,13 +3672,15 @@ function mathSkip() {
   p.classList.add('flash-wrong');
   p.textContent = `${mathCurrent.a} ${MATH_SYM[op]} ${mathCurrent.b} = ${mathCurrent.answer}`;
   document.getElementById('math-countdown').textContent = 'Skipped';
+  let skShowMs = 1100;
+  if (factKey && !mathCurrent.practice) { skShowMs = 2600; mathQueueRevisit(mathCurrent); }
   mathProblems.push({
     op, L: mathCurrent.L, a: mathCurrent.a, b: mathCurrent.b,
     answer: mathCurrent.answer, guess: null, correct: false,
-    ms: Date.now() - mathProblemStart, timeout: false, skip: true
+    ms: Date.now() - mathProblemStart, timeout: false, skip: true, practice: !!mathCurrent.practice
   });
   mathLocked = true;
-  setTimeout(() => { mathLocked = false; if (mathRunning && !mathPaused) mathNewProblem(); }, 1100);
+  setTimeout(() => { mathLocked = false; if (mathRunning && !mathPaused) mathNewProblem(); }, skShowMs);
   mathRunStats();
   if (changed) mathSaveLevels();
 }
@@ -3661,10 +3699,11 @@ function buildMathSessionText(seconds) {
   const header = `SESSION ${dateFmt} ${timeFmt} · ${dur} · ${mathAnswered} answered · ${mathCorrect} correct (${acc}%)${skipBit} · ${opBits}`;
   const lines = mathProblems.map(p => {
     const secs = (p.ms/1000).toFixed(1) + 's';
-    if (p.skip) return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} — (${p.answer}) SKIP`;
-    if (p.timeout) return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} — (${p.answer}) TIMEOUT`;
-    if (p.correct) return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} = ${p.answer} ✓ ${secs}`;
-    return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} = ${p.guess} ✗ (${p.answer}) ${secs}`;
+    const tag = p.practice ? ' [PRACTICE]' : '';
+    if (p.skip) return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} — (${p.answer}) SKIP${tag}`;
+    if (p.timeout) return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} — (${p.answer}) TIMEOUT${tag}`;
+    if (p.correct) return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} = ${p.answer} ✓ ${secs}${tag}`;
+    return `${p.op.toUpperCase()} L${p.L} ${p.a} ${mathOpSym(p.op)} ${p.b} = ${p.guess} ✗ (${p.answer}) ${secs}${tag}`;
   });
   return header + '\n' + lines.join('\n');
 }
